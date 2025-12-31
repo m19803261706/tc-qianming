@@ -8,30 +8,39 @@
     "title": "[Epic] 太初星集电子签章系统",
     "url": "https://github.com/m19803261706/tc-qianming/issues/1"
   },
+  "progress": {
+    "total": 19,
+    "completed": 1,
+    "percent": 5
+  },
   "phases": [
     {
       "name": "Phase 1: 数据库设计",
       "issues": [2, 3, 4, 5],
-      "status": "ready"
+      "status": "in_progress",
+      "completed": 1
     },
     {
       "name": "Phase 2: 后端开发",
       "issues": [6, 7, 8, 9, 10, 11, 12, 13],
-      "status": "blocked"
+      "status": "blocked",
+      "completed": 0
     },
     {
       "name": "Phase 3: 前端开发",
       "issues": [14, 15, 16, 17, 18, 19],
-      "status": "blocked"
+      "status": "blocked",
+      "completed": 0
     },
     {
       "name": "Phase 4: 文档",
       "issues": [20],
-      "status": "blocked"
+      "status": "blocked",
+      "completed": 0
     }
   ],
   "issues": [
-    {"number": 2, "title": "印章信息表设计", "type": "database", "status": "tc-ready", "phase": 1},
+    {"number": 2, "title": "印章信息表设计", "type": "database", "status": "tc-done", "phase": 1, "completed_at": "2026-01-01", "commit": "b1ba6fe"},
     {"number": 3, "title": "签章记录表设计", "type": "database", "status": "tc-ready", "phase": 1},
     {"number": 4, "title": "合同文件表设计", "type": "database", "status": "tc-ready", "phase": 1},
     {"number": 5, "title": "个人签名表设计", "type": "database", "status": "tc-ready", "phase": 1},
@@ -51,5 +60,11 @@
     {"number": 19, "title": "签章流程主页面", "type": "frontend", "status": "tc-blocked", "phase": 3, "depends_on": [14, 15, 16, 17, 18]},
     {"number": 20, "title": "API 接口文档", "type": "docs", "status": "tc-blocked", "phase": 4, "depends_on": [6, 7, 8, 9, 10, 11, 12, 13]}
   ],
-  "execution_order": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+  "execution_order": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  "last_completed": {
+    "issue": 2,
+    "title": "印章信息表设计",
+    "commit": "b1ba6fe",
+    "time": "2026-01-01"
+  }
 }
