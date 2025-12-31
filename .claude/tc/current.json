@@ -1,0 +1,55 @@
+{
+  "project_id": "tc-qianming",
+  "feature": "电子签章系统",
+  "prd": ".claude/tc/prds/电子签章系统/prd.md",
+  "created_at": "2026-01-01",
+  "epic": {
+    "number": 1,
+    "title": "[Epic] 太初星集电子签章系统",
+    "url": "https://github.com/m19803261706/tc-qianming/issues/1"
+  },
+  "phases": [
+    {
+      "name": "Phase 1: 数据库设计",
+      "issues": [2, 3, 4, 5],
+      "status": "ready"
+    },
+    {
+      "name": "Phase 2: 后端开发",
+      "issues": [6, 7, 8, 9, 10, 11, 12, 13],
+      "status": "blocked"
+    },
+    {
+      "name": "Phase 3: 前端开发",
+      "issues": [14, 15, 16, 17, 18, 19],
+      "status": "blocked"
+    },
+    {
+      "name": "Phase 4: 文档",
+      "issues": [20],
+      "status": "blocked"
+    }
+  ],
+  "issues": [
+    {"number": 2, "title": "印章信息表设计", "type": "database", "status": "tc-ready", "phase": 1},
+    {"number": 3, "title": "签章记录表设计", "type": "database", "status": "tc-ready", "phase": 1},
+    {"number": 4, "title": "合同文件表设计", "type": "database", "status": "tc-ready", "phase": 1},
+    {"number": 5, "title": "个人签名表设计", "type": "database", "status": "tc-ready", "phase": 1},
+    {"number": 6, "title": "印章管理 CRUD API", "type": "backend", "status": "tc-blocked", "phase": 2, "depends_on": [2]},
+    {"number": 7, "title": "印章图片上传接口", "type": "backend", "status": "tc-blocked", "phase": 2, "depends_on": [2]},
+    {"number": 8, "title": "印章自动生成服务", "type": "backend", "status": "tc-blocked", "phase": 2, "depends_on": [2]},
+    {"number": 9, "title": "PDF 上传与预览接口", "type": "backend", "status": "tc-blocked", "phase": 2, "depends_on": [4]},
+    {"number": 10, "title": "盖章处理接口", "type": "backend", "status": "tc-blocked", "phase": 2, "depends_on": [2, 3, 4]},
+    {"number": 11, "title": "骑缝章生成逻辑", "type": "backend", "status": "tc-blocked", "phase": 2, "depends_on": [10]},
+    {"number": 12, "title": "个人签名管理接口", "type": "backend", "status": "tc-blocked", "phase": 2, "depends_on": [5]},
+    {"number": 13, "title": "签名生成接口", "type": "backend", "status": "tc-blocked", "phase": 2, "depends_on": [5]},
+    {"number": 14, "title": "印章管理页面", "type": "frontend", "status": "tc-blocked", "phase": 3, "depends_on": [6, 7]},
+    {"number": 15, "title": "印章模板选择/生成组件", "type": "frontend", "status": "tc-blocked", "phase": 3, "depends_on": [8]},
+    {"number": 16, "title": "PDF 预览与盖章位置选择组件", "type": "frontend", "status": "tc-blocked", "phase": 3, "depends_on": [9, 10]},
+    {"number": 17, "title": "在线手写签名组件", "type": "frontend", "status": "tc-blocked", "phase": 3, "depends_on": [12, 13]},
+    {"number": 18, "title": "合同列表与盖章记录页面", "type": "frontend", "status": "tc-blocked", "phase": 3, "depends_on": [9]},
+    {"number": 19, "title": "签章流程主页面", "type": "frontend", "status": "tc-blocked", "phase": 3, "depends_on": [14, 15, 16, 17, 18]},
+    {"number": 20, "title": "API 接口文档", "type": "docs", "status": "tc-blocked", "phase": 4, "depends_on": [6, 7, 8, 9, 10, 11, 12, 13]}
+  ],
+  "execution_order": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+}
