@@ -10,15 +10,15 @@
   },
   "progress": {
     "total": 19,
-    "completed": 1,
-    "percent": 5
+    "completed": 2,
+    "percent": 11
   },
   "phases": [
     {
       "name": "Phase 1: 数据库设计",
       "issues": [2, 3, 4, 5],
       "status": "in_progress",
-      "completed": 1
+      "completed": 2
     },
     {
       "name": "Phase 2: 后端开发",
@@ -41,7 +41,7 @@
   ],
   "issues": [
     {"number": 2, "title": "印章信息表设计", "type": "database", "status": "tc-done", "phase": 1, "completed_at": "2026-01-01", "commit": "b1ba6fe"},
-    {"number": 3, "title": "签章记录表设计", "type": "database", "status": "tc-ready", "phase": 1},
+    {"number": 3, "title": "签章记录表设计", "type": "database", "status": "tc-done", "phase": 1, "completed_at": "2026-01-01", "commit": "60be46e"},
     {"number": 4, "title": "合同文件表设计", "type": "database", "status": "tc-ready", "phase": 1},
     {"number": 5, "title": "个人签名表设计", "type": "database", "status": "tc-ready", "phase": 1},
     {"number": 6, "title": "印章管理 CRUD API", "type": "backend", "status": "tc-blocked", "phase": 2, "depends_on": [2]},
@@ -62,9 +62,9 @@
   ],
   "execution_order": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
   "last_completed": {
-    "issue": 2,
-    "title": "印章信息表设计",
-    "commit": "b1ba6fe",
+    "issue": 3,
+    "title": "签章记录表设计",
+    "commit": "60be46e",
     "time": "2026-01-01"
   }
 }
