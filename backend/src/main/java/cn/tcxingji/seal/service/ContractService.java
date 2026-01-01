@@ -5,6 +5,7 @@ import cn.tcxingji.seal.dto.request.ContractUploadRequest;
 import cn.tcxingji.seal.dto.response.ContractPreviewResponse;
 import cn.tcxingji.seal.dto.response.ContractResponse;
 import cn.tcxingji.seal.dto.response.PageResponse;
+import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -85,4 +86,13 @@ public interface ContractService {
      * @return 合同响应
      */
     ContractResponse updateStatus(Long id, Integer status);
+
+    /**
+     * 下载合同 PDF 文件
+     *
+     * @param id             合同ID
+     * @param downloadSigned 是否下载签章后的版本（true-签章后，false-原始文件）
+     * @return 文件资源
+     */
+    Resource download(Long id, boolean downloadSigned);
 }

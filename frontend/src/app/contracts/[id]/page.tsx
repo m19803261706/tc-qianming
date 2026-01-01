@@ -10,6 +10,7 @@ import {
   type Contract,
   CONTRACT_STATUS,
 } from '@/lib/contract-api';
+import { API_BASE_URL } from '@/lib/api';
 
 /**
  * 合同详情页面
@@ -184,17 +185,29 @@ export default function ContractDetailPage() {
                   签章
                 </Link>
               )}
-              {/* 下载按钮 */}
+              {/* 下载按钮 - 优先下载签章版 */}
               <a
-                href={contract.originalUrl}
-                download={contract.fileName}
+                href={`${API_BASE_URL}/api/contracts/${contract.id}/download?type=signed`}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
-                下载
+                {contract.signedUrl ? '下载签章版' : '下载'}
               </a>
+              {/* 如果有签章版，额外提供下载原件的选项 */}
+              {contract.signedUrl && (
+                <a
+                  href={`${API_BASE_URL}/api/contracts/${contract.id}/download?type=original`}
+                  className="inline-flex items-center px-4 py-2 border border-gray-200 text-gray-500 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                  title="下载原始PDF文件（未签章）"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  原件
+                </a>
+              )}
             </div>
           </div>
         </div>

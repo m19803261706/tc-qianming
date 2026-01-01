@@ -12,12 +12,20 @@ import cn.tcxingji.seal.dto.response.PageResponse;
 import cn.tcxingji.seal.dto.response.SealRecordResponse;
 import cn.tcxingji.seal.service.ContractService;
 import cn.tcxingji.seal.service.SealStampService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -247,5 +255,58 @@ public class ContractController {
         log.info("添加骑缝章: contractId={}, sealId={}", id, request.getSealId());
         ContractSealResponse response = sealStampService.perforationStamp(id, request);
         return ApiResponse.success("骑缝章添加成功", response);
+    }
+
+    // ==================== 下载接口 ====================
+
+    /**
+     * 下载合同 PDF
+     * <p>
+     * 优先下载签章后的 PDF，如果没有签章则下载原始 PDF
+     * </p>
+     *
+     * @param id   合同ID
+     * @param type 下载类型：signed-签章后, original-原始文件（默认signed）
+     * @return PDF 文件流
+     */
+    @GetMapping("/{id}/download")
+    public ResponseEntity<Resource> download(
+            @PathVariable Long id,
+            @RequestParam(value = "type", defaultValue = "signed") String type) {
+
+        log.info("下载合同: contractId={}, type={}", id, type);
+
+        boolean downloadSigned = !"original".equalsIgnoreCase(type);
+        Resource resource = contractService.download(id, downloadSigned);
+        ContractResponse contract = contractService.getById(id);
+
+        // 构建文件名
+        String fileName = contract.getContractName();
+        if (fileName == null || fileName.isEmpty()) {
+            fileName = contract.getFileName();
+        }
+        // 确保文件名以 .pdf 结尾
+        if (!fileName.toLowerCase().endsWith(".pdf")) {
+            fileName += ".pdf";
+        }
+        // 如果是签章后的文件，添加标识
+        if (downloadSigned && contract.getSignedUrl() != null) {
+            fileName = fileName.replace(".pdf", "_已签章.pdf");
+        }
+
+        // URL 编码文件名，处理中文
+        String encodedFileName;
+        try {
+            encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                    .replaceAll("\\+", "%20");
+        } catch (UnsupportedEncodingException e) {
+            encodedFileName = "contract.pdf";
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''" + encodedFileName)
+                .body(resource);
     }
 }

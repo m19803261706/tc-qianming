@@ -16,12 +16,16 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.net.MalformedURLException;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -277,6 +281,37 @@ public class ContractServiceImpl implements ContractService {
         contractFile = contractFileRepository.save(contractFile);
         log.info("合同状态更新: id={}, status={}", id, status);
         return ContractResponse.fromEntity(contractFile);
+    }
+
+    @Override
+    public Resource download(Long id, boolean downloadSigned) {
+        ContractFile contractFile = findContractOrThrow(id);
+
+        // 确定要下载的文件路径
+        String pathToUse;
+        if (downloadSigned && contractFile.getSignedPath() != null && !contractFile.getSignedPath().isEmpty()) {
+            pathToUse = contractFile.getSignedPath();
+        } else {
+            pathToUse = contractFile.getOriginalPath();
+        }
+
+        Path filePath = Paths.get(pathToUse);
+        if (!Files.exists(filePath)) {
+            throw new BusinessException("文件不存在: " + pathToUse);
+        }
+
+        try {
+            Resource resource = new UrlResource(filePath.toUri());
+            if (resource.exists() && resource.isReadable()) {
+                log.info("下载合同: id={}, path={}", id, pathToUse);
+                return resource;
+            } else {
+                throw new BusinessException("无法读取文件: " + pathToUse);
+            }
+        } catch (MalformedURLException e) {
+            log.error("文件路径错误: {}", pathToUse, e);
+            throw new BusinessException("文件路径错误: " + e.getMessage());
+        }
     }
 
     // ==================== 私有方法 ====================
