@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getSeals, type Seal, SEAL_TYPES } from '@/lib/seal-api';
+import { getFullFileUrl } from '@/lib/api';
 
 interface SealSelectStepProps {
   /** 选中的印章 */
@@ -259,7 +260,7 @@ function SealCard({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={seal.sealImageUrl}
+          src={getFullFileUrl(seal.sealImageUrl)}
           alt={seal.sealName}
           style={{ width: Math.min(sealSize, 100), height: Math.min(sealSize, 100) }}
           className="object-contain"

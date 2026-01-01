@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { type Seal } from '@/lib/seal-api';
 import { type SealPosition } from '@/lib/contract-api';
+import { getFullFileUrl } from '@/lib/api';
 
 /**
  * 印章放置信息（前端使用，包含更多UI信息）
@@ -171,7 +172,7 @@ export default function SealPositionPicker({
         >
           {/* 印章图片 */}
           <Image
-            src={placement.seal.sealImageUrl}
+            src={getFullFileUrl(placement.seal.sealImageUrl)}
             alt={placement.seal.sealName}
             width={placement.width}
             height={placement.height}

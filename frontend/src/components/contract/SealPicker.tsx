@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { type Seal, getSeals, SEAL_TYPES } from '@/lib/seal-api';
+import { getFullFileUrl } from '@/lib/api';
 
 interface SealPickerProps {
   /** 选中的印章 */
@@ -160,7 +161,7 @@ export default function SealPicker({
                 {/* 印章图片 */}
                 <div className="flex justify-center mb-1">
                   <Image
-                    src={seal.sealImageUrl}
+                    src={getFullFileUrl(seal.sealImageUrl)}
                     alt={seal.sealName}
                     width={60}
                     height={60}
@@ -189,7 +190,7 @@ export default function SealPicker({
         <div className="p-3 border-t bg-blue-50">
           <div className="flex items-center gap-2">
             <Image
-              src={value.sealImageUrl}
+              src={getFullFileUrl(value.sealImageUrl)}
               alt={value.sealName}
               width={32}
               height={32}

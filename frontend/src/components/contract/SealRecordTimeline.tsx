@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getSealRecords, type SealRecord } from '@/lib/contract-api';
+import { getFullFileUrl } from '@/lib/api';
 
 interface SealRecordTimelineProps {
   /** 合同ID */
@@ -193,7 +194,7 @@ export default function SealRecordTimeline({
                       <div className="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={record.sealImageUrl}
+                          src={getFullFileUrl(record.sealImageUrl)}
                           alt={record.sealName}
                           className="max-w-full max-h-full object-contain"
                         />

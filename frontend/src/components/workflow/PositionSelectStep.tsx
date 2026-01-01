@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { PdfViewer, SealPositionPicker, type SealPlacement, placementToSealPosition } from '@/components/contract';
 import { type Seal } from '@/lib/seal-api';
 import { type Contract, type SealPosition, type ContractSealRequest, sealContract } from '@/lib/contract-api';
+import { getFullFileUrl } from '@/lib/api';
 
 interface PositionSelectStepProps {
   /** 合同 */
@@ -160,7 +161,7 @@ export default function PositionSelectStep({
               <div className="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={seal.sealImageUrl}
+                  src={getFullFileUrl(seal.sealImageUrl)}
                   alt={seal.sealName}
                   className="max-w-full max-h-full object-contain"
                 />
