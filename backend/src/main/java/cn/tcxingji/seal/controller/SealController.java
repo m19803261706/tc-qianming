@@ -4,13 +4,16 @@ import cn.tcxingji.seal.dto.request.SealCreateRequest;
 import cn.tcxingji.seal.dto.request.SealQueryRequest;
 import cn.tcxingji.seal.dto.request.SealUpdateRequest;
 import cn.tcxingji.seal.dto.response.ApiResponse;
+import cn.tcxingji.seal.dto.response.FileUploadResponse;
 import cn.tcxingji.seal.dto.response.PageResponse;
 import cn.tcxingji.seal.dto.response.SealResponse;
+import cn.tcxingji.seal.service.FileUploadService;
 import cn.tcxingji.seal.service.SealService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -30,6 +33,7 @@ import java.util.List;
 public class SealController {
 
     private final SealService sealService;
+    private final FileUploadService fileUploadService;
 
     /**
      * 创建印章
@@ -141,5 +145,24 @@ public class SealController {
         log.debug("查询所有者启用印章列表: ownerId={}, ownerType={}", ownerId, ownerType);
         List<SealResponse> response = sealService.listEnabledByOwner(ownerId, ownerType);
         return ApiResponse.success(response);
+    }
+
+    // ==================== 文件上传接口 ====================
+
+    /**
+     * 上传印章图片
+     * <p>
+     * 支持 PNG/JPG 格式，最大 5MB
+     * </p>
+     *
+     * @param file 印章图片文件
+     * @return 上传结果（包含文件路径和访问 URL）
+     */
+    @PostMapping("/upload")
+    public ApiResponse<FileUploadResponse> uploadSealImage(@RequestParam("file") MultipartFile file) {
+        log.info("上传印章图片: originalName={}, size={}",
+                file.getOriginalFilename(), file.getSize());
+        FileUploadResponse response = fileUploadService.uploadSealImage(file);
+        return ApiResponse.success("印章图片上传成功", response);
     }
 }
