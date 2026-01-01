@@ -50,6 +50,8 @@ spring:
 # 文件存储配置（开发环境使用项目目录，生产环境应配置为服务器路径）
 file:
   upload:
+    # 文件访问基础URL（生产环境需配置为实际域名）
+    base-url: http://localhost:8099
     # 印章图片存储路径
     seal-path: ./uploads/seals
     # 合同文件存储路径

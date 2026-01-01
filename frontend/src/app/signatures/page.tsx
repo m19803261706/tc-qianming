@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import Image from 'next/image';
 import {
   getSignatures,
   deleteSignature,
@@ -316,12 +315,10 @@ export default function SignaturesPage() {
                       {/* 签名图片预览 */}
                       <div className="relative h-40 bg-gray-100 flex items-center justify-center">
                         {imageUrl ? (
-                          <Image
+                          <img
                             src={imageUrl}
                             alt={signature.signatureName}
-                            fill
-                            className="object-contain p-4"
-                            unoptimized
+                            className="absolute inset-0 w-full h-full object-contain p-4"
                           />
                         ) : (
                           <span className="text-gray-400">无预览</span>
