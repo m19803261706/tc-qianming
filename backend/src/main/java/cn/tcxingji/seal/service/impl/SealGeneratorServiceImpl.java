@@ -127,17 +127,20 @@ public class SealGeneratorServiceImpl implements SealGeneratorService {
                 ));
             }
 
-            // 2. 绘制五角星
+            // 2. 绘制五角星（稍微缩小一点，给中心文字留空间）
+            int starRadius = radius / 4;  // 五角星大小
             if (template.isHasStar()) {
-                drawStar(g2d, centerX, centerY, radius / 3);
+                drawStar(g2d, centerX, centerY - 5, starRadius);  // 星星略微上移
             }
 
-            // 3. 绘制环绕文字
-            drawCircleText(g2d, companyName, centerX, centerY, radius - 20, color);
+            // 3. 绘制环绕文字（沿上半圆分布）
+            drawCircleText(g2d, companyName, centerX, centerY, radius - 15, color);
 
-            // 4. 绘制中心文字
+            // 4. 绘制中心文字（在五角星下方，保持适当间距）
             if (centerText != null && !centerText.isEmpty()) {
-                drawCenterText(g2d, centerText, centerX, centerY + radius / 3, color);
+                // 中心文字位置 = 圆心Y + 五角星半径 + 间距
+                int centerTextY = centerY + starRadius + 25;
+                drawCenterText(g2d, centerText, centerX, centerTextY, color);
             }
 
         } finally {
@@ -241,6 +244,9 @@ public class SealGeneratorServiceImpl implements SealGeneratorService {
 
     /**
      * 绘制环绕文字
+     * <p>
+     * 标准公章文字布局：沿上半圆从左到右均匀分布，文字头朝外（向圆外方向）
+     * </p>
      *
      * @param g2d         图形上下文
      * @param text        文字内容
@@ -255,7 +261,9 @@ public class SealGeneratorServiceImpl implements SealGeneratorService {
             return;
         }
 
-        Font font = new Font("宋体", Font.BOLD, 28);
+        // 根据文字数量动态调整字体大小
+        int fontSize = text.length() > 12 ? 22 : (text.length() > 8 ? 24 : 26);
+        Font font = new Font("宋体", Font.BOLD, fontSize);
         g2d.setFont(font);
         g2d.setColor(color);
 
@@ -263,32 +271,38 @@ public class SealGeneratorServiceImpl implements SealGeneratorService {
         char[] chars = text.toCharArray();
         int charCount = chars.length;
 
-        // 计算文字分布角度范围（从左上到右上，约270度）
-        double startAngle = Math.PI * 0.75;  // 135度（左上）
-        double endAngle = Math.PI * 0.25;    // 45度（右上）
-        double totalAngle = Math.PI * 1.5;   // 270度范围
+        // 标准公章：文字沿上半圆分布，从左侧开始顺时针到右侧
+        // 角度从 210° 开始（左下方向上），到 -30°（330°，右下方向上）
+        // 这样文字会分布在上半圆，留出底部空间给中心文字
+        double startAngle = Math.toRadians(210);  // 起始角度 210°
+        double endAngle = Math.toRadians(-30);    // 结束角度 -30°（即 330°）
+        double totalAngle = startAngle - endAngle; // 总角度范围 240°
 
+        // 计算每个字符的角度间隔
         double angleStep = totalAngle / (charCount + 1);
 
         for (int i = 0; i < charCount; i++) {
+            // 当前字符的角度位置
             double angle = startAngle - angleStep * (i + 1);
 
-            // 计算字符位置
-            int x = (int) (centerX + radius * Math.cos(angle));
-            int y = (int) (centerY - radius * Math.sin(angle));
+            // 计算字符位置（圆上的点）
+            double x = centerX + radius * Math.cos(angle);
+            double y = centerY - radius * Math.sin(angle);
 
             // 创建字符的变换
             AffineTransform transform = new AffineTransform();
             transform.translate(x, y);
-            // 旋转角度使文字朝向圆心
-            transform.rotate(Math.PI / 2 - angle);
+
+            // 旋转角度使文字头朝外（文字底部朝向圆心）
+            // 旋转角度 = -angle - 90°，使文字垂直于半径，头朝外
+            transform.rotate(-angle - Math.PI / 2);
 
             // 绘制单个字符
             String ch = String.valueOf(chars[i]);
             GlyphVector gv = font.createGlyphVector(frc, ch);
             Shape shape = gv.getOutline();
 
-            // 居中偏移
+            // 居中偏移（使字符中心对准计算出的位置）
             Rectangle bounds = shape.getBounds();
             transform.translate(-bounds.width / 2.0, bounds.height / 2.0);
 
