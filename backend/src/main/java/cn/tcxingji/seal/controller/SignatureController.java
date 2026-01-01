@@ -1,10 +1,14 @@
 package cn.tcxingji.seal.controller;
 
+import cn.tcxingji.seal.dto.request.FontSignatureRequest;
+import cn.tcxingji.seal.dto.request.HandwriteSignatureRequest;
 import cn.tcxingji.seal.dto.request.SignatureCreateRequest;
 import cn.tcxingji.seal.dto.request.SignatureQueryRequest;
 import cn.tcxingji.seal.dto.response.ApiResponse;
+import cn.tcxingji.seal.dto.response.FontInfoResponse;
 import cn.tcxingji.seal.dto.response.PageResponse;
 import cn.tcxingji.seal.dto.response.SignatureResponse;
+import cn.tcxingji.seal.service.SignatureGenerateService;
 import cn.tcxingji.seal.service.SignatureService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +33,7 @@ import java.util.List;
 public class SignatureController {
 
     private final SignatureService signatureService;
+    private final SignatureGenerateService signatureGenerateService;
 
     /**
      * 获取签名列表（分页）
@@ -161,5 +166,59 @@ public class SignatureController {
         log.info("更新签名状态请求: id={}, status={}", id, status);
         SignatureResponse response = signatureService.updateStatus(id, status);
         return ApiResponse.success("状态更新成功", response);
+    }
+
+    // ==================== 签名生成接口 ====================
+
+    /**
+     * 保存手写签名
+     * <p>
+     * 接收 Base64 编码的手写签名图片并保存
+     * </p>
+     *
+     * @param request 手写签名请求
+     * @return 签名响应
+     */
+    @PostMapping("/handwrite")
+    public ApiResponse<SignatureResponse> saveHandwriteSignature(
+            @Valid @RequestBody HandwriteSignatureRequest request) {
+
+        log.info("保存手写签名请求: userId={}", request.getUserId());
+        SignatureResponse response = signatureGenerateService.saveHandwriteSignature(request);
+        return ApiResponse.success("手写签名保存成功", response);
+    }
+
+    /**
+     * 生成字体签名
+     * <p>
+     * 使用指定字体生成签名图片
+     * </p>
+     *
+     * @param request 字体签名请求
+     * @return 签名响应
+     */
+    @PostMapping("/generate")
+    public ApiResponse<SignatureResponse> generateFontSignature(
+            @Valid @RequestBody FontSignatureRequest request) {
+
+        log.info("生成字体签名请求: userId={}, text={}, font={}",
+                request.getUserId(), request.getText(), request.getFontName());
+        SignatureResponse response = signatureGenerateService.generateFontSignature(request);
+        return ApiResponse.success("字体签名生成成功", response);
+    }
+
+    /**
+     * 获取可用字体列表
+     * <p>
+     * 返回系统中可用于签名生成的中文书法字体
+     * </p>
+     *
+     * @return 字体信息列表
+     */
+    @GetMapping("/fonts")
+    public ApiResponse<List<FontInfoResponse>> getAvailableFonts() {
+        log.debug("获取可用字体列表");
+        List<FontInfoResponse> fonts = signatureGenerateService.getAvailableFonts();
+        return ApiResponse.success(fonts);
     }
 }
