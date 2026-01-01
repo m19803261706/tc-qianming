@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { type ContractPreview, previewContract } from '@/lib/contract-api';
+import { getFullFileUrl } from '@/lib/api';
 
 interface PdfViewerProps {
   /** 合同ID */
@@ -272,7 +273,7 @@ export default function PdfViewer({
                   className={onPageClick ? 'cursor-crosshair' : ''}
                 >
                   <Image
-                    src={url}
+                    src={getFullFileUrl(url)}
                     alt={`第 ${pageNumber} 页`}
                     width={preview.width || 600}
                     height={preview.height || 800}
