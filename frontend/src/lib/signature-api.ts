@@ -157,6 +157,25 @@ export async function getAvailableFonts(): Promise<ApiResponse<FontInfo[]>> {
   return get('/api/signatures/fonts');
 }
 
+/**
+ * 预览字体签名
+ * @param text 签名文字
+ * @param fontName 字体名称
+ * @param fontColor 字体颜色
+ * @returns Base64 编码的图片数据
+ */
+export async function previewFontSignature(
+  text: string,
+  fontName: string,
+  fontColor?: string
+): Promise<ApiResponse<string>> {
+  const params: Record<string, string> = { text, fontName };
+  if (fontColor) {
+    params.fontColor = fontColor;
+  }
+  return get('/api/signatures/preview', params);
+}
+
 // ==================== 常量 ====================
 
 /**

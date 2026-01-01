@@ -32,6 +32,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -265,6 +266,34 @@ public class SignatureGenerateServiceImpl implements SignatureGenerateService {
 
         log.info("可用字体数量: {}", result.size());
         return result;
+    }
+
+    @Override
+    public String previewFontSignature(String text, String fontName, String fontColor) {
+        log.debug("生成字体签名预览: text={}, fontName={}, color={}", text, fontName, fontColor);
+
+        try {
+            // 1. 获取字体（预览使用较大字号）
+            Font font = getFont(fontName, 72);
+
+            // 2. 解析颜色
+            Color color = parseColor(fontColor);
+
+            // 3. 生成签名图片
+            BufferedImage signatureImage = renderTextAsImage(text, font, color);
+
+            // 4. 转换为 Base64
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(signatureImage, "PNG", baos);
+            byte[] imageBytes = baos.toByteArray();
+            String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+
+            return "data:image/png;base64," + base64Image;
+
+        } catch (Exception e) {
+            log.error("生成字体签名预览失败: text={}, fontName={}", text, fontName, e);
+            throw new BusinessException("生成预览失败: " + e.getMessage());
+        }
     }
 
     // ==================== 私有方法 ====================

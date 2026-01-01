@@ -221,4 +221,26 @@ public class SignatureController {
         List<FontInfoResponse> fonts = signatureGenerateService.getAvailableFonts();
         return ApiResponse.success(fonts);
     }
+
+    /**
+     * 预览字体签名
+     * <p>
+     * 使用指定字体生成签名预览图片（Base64格式），不保存到数据库
+     * </p>
+     *
+     * @param text      签名文字
+     * @param fontName  字体名称
+     * @param fontColor 字体颜色（可选）
+     * @return Base64 编码的图片数据
+     */
+    @GetMapping("/preview")
+    public ApiResponse<String> previewFontSignature(
+            @RequestParam String text,
+            @RequestParam String fontName,
+            @RequestParam(required = false, defaultValue = "#000000") String fontColor) {
+
+        log.debug("预览字体签名: text={}, fontName={}, color={}", text, fontName, fontColor);
+        String previewImage = signatureGenerateService.previewFontSignature(text, fontName, fontColor);
+        return ApiResponse.success(previewImage);
+    }
 }

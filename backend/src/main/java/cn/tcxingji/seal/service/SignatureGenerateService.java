@@ -51,4 +51,18 @@ public interface SignatureGenerateService {
      * @return 字体信息列表
      */
     List<FontInfoResponse> getAvailableFonts();
+
+    /**
+     * 生成字体签名预览图片
+     * <p>
+     * 使用指定字体将文本渲染为预览图片（Base64格式），
+     * 不保存到数据库，仅用于前端预览
+     * </p>
+     *
+     * @param text      签名文字
+     * @param fontName  字体名称
+     * @param fontColor 字体颜色（可选，默认黑色）
+     * @return Base64 编码的图片数据
+     */
+    String previewFontSignature(String text, String fontName, String fontColor);
 }

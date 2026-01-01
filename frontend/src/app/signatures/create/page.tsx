@@ -6,6 +6,7 @@ import {
   saveHandwriteSignature,
   generateFontSignature,
   getAvailableFonts,
+  previewFontSignature,
   type FontInfo,
 } from '@/lib/signature-api';
 
@@ -41,6 +42,8 @@ export default function CreateSignaturePage() {
   const [fontText, setFontText] = useState('');
   const [fontColor, setFontColor] = useState('#000000');
   const [fontsLoading, setFontsLoading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // ==================== 上传签名状态 ====================
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -72,6 +75,36 @@ export default function CreateSignaturePage() {
       loadFonts();
     }
   }, [mode, fonts.length, loadFonts]);
+
+  /**
+   * 加载字体预览图片
+   */
+  const loadPreview = useCallback(async () => {
+    if (!fontText.trim() || !selectedFont) {
+      setPreviewImage(null);
+      return;
+    }
+
+    try {
+      setPreviewLoading(true);
+      const response = await previewFontSignature(fontText.trim(), selectedFont, fontColor);
+      if (response.code === 200 && response.data) {
+        setPreviewImage(response.data);
+      }
+    } catch (err) {
+      console.error('加载预览失败:', err);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [fontText, selectedFont, fontColor]);
+
+  // 当文字、字体或颜色变化时更新预览（防抖）
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadPreview();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [loadPreview]);
 
   // ==================== Canvas 手写签名逻辑 ====================
 
@@ -481,18 +514,20 @@ export default function CreateSignaturePage() {
                   预览效果
                 </label>
                 <div
-                  className="border border-gray-300 rounded-lg p-4 bg-white text-center"
-                  style={{ minHeight: '80px' }}
+                  className="border border-gray-300 rounded-lg p-4 bg-white flex items-center justify-center"
+                  style={{ minHeight: '100px' }}
                 >
-                  <span
-                    className="text-4xl"
-                    style={{
-                      color: fontColor,
-                      fontFamily: selectedFont || 'inherit'
-                    }}
-                  >
-                    {fontText}
-                  </span>
+                  {previewLoading ? (
+                    <div className="text-gray-400">加载预览中...</div>
+                  ) : previewImage ? (
+                    <img
+                      src={previewImage}
+                      alt="签名预览"
+                      className="max-h-24"
+                    />
+                  ) : (
+                    <span className="text-gray-400">输入文字后将显示预览</span>
+                  )}
                 </div>
               </div>
             )}
