@@ -2,7 +2,7 @@
  * 合同管理 API
  */
 
-import { get, post, del, put, type ApiResponse, type PageResponse } from './api';
+import { get, post, del, put, API_BASE_URL, type ApiResponse, type PageResponse } from './api';
 
 /**
  * 合同信息
@@ -118,6 +118,7 @@ export interface PerforationSealRequest {
 
 /**
  * 上传合同
+ * 使用 API_BASE_URL 从 ./api 导入，避免硬编码
  */
 export async function uploadContract(
   file: File,
@@ -133,12 +134,17 @@ export async function uploadContract(
     formData.append('remark', remark);
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-  const response = await fetch(`${baseUrl}/api/contracts/upload`, {
+  const response = await fetch(`${API_BASE_URL}/api/contracts/upload`, {
     method: 'POST',
     body: formData,
   });
-  return response.json();
+
+  const result = await response.json();
+  // 添加 success 属性保持一致性
+  return {
+    ...result,
+    success: result.code === 200,
+  };
 }
 
 /**

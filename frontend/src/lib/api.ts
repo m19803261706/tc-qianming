@@ -3,7 +3,8 @@
  * 提供统一的 HTTP 请求方法
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+/** API 基础 URL - 必须在环境变量中配置 NEXT_PUBLIC_API_URL */
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 // 调试：打印 API 基础 URL
 if (typeof window !== 'undefined') {
