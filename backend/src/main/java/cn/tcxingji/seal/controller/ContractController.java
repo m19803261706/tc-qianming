@@ -41,10 +41,11 @@ public class ContractController {
     /**
      * 上传 PDF 合同文件
      *
-     * @param file    PDF 文件
-     * @param ownerId 所有者ID
-     * @param ownerType 所有者类型（可选，默认1-企业）
-     * @param remark  备注（可选）
+     * @param file         PDF 文件
+     * @param ownerId      所有者ID
+     * @param ownerType    所有者类型（可选，默认1-企业）
+     * @param contractName 合同名称（可选，不填则使用文件名）
+     * @param remark       备注（可选）
      * @return 合同响应
      */
     @PostMapping("/upload")
@@ -52,14 +53,16 @@ public class ContractController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("ownerId") Long ownerId,
             @RequestParam(value = "ownerType", defaultValue = "1") Integer ownerType,
+            @RequestParam(value = "contractName", required = false) String contractName,
             @RequestParam(value = "remark", required = false) String remark) {
 
-        log.info("上传合同: originalName={}, size={}, ownerId={}",
-                file.getOriginalFilename(), file.getSize(), ownerId);
+        log.info("上传合同: originalName={}, contractName={}, size={}, ownerId={}",
+                file.getOriginalFilename(), contractName, file.getSize(), ownerId);
 
         ContractUploadRequest request = ContractUploadRequest.builder()
                 .ownerId(ownerId)
                 .ownerType(ownerType)
+                .contractName(contractName)
                 .remark(remark)
                 .build();
 
