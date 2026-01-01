@@ -1,12 +1,16 @@
 package cn.tcxingji.seal.controller;
 
 import cn.tcxingji.seal.dto.request.ContractQueryRequest;
+import cn.tcxingji.seal.dto.request.ContractSealRequest;
 import cn.tcxingji.seal.dto.request.ContractUploadRequest;
 import cn.tcxingji.seal.dto.response.ApiResponse;
 import cn.tcxingji.seal.dto.response.ContractPreviewResponse;
 import cn.tcxingji.seal.dto.response.ContractResponse;
+import cn.tcxingji.seal.dto.response.ContractSealResponse;
 import cn.tcxingji.seal.dto.response.PageResponse;
+import cn.tcxingji.seal.dto.response.SealRecordResponse;
 import cn.tcxingji.seal.service.ContractService;
+import cn.tcxingji.seal.service.SealStampService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +35,7 @@ import java.util.List;
 public class ContractController {
 
     private final ContractService contractService;
+    private final SealStampService sealStampService;
 
     /**
      * 上传 PDF 合同文件
@@ -162,5 +167,61 @@ public class ContractController {
         log.info("更新合同状态: id={}, status={}", id, status);
         ContractResponse response = contractService.updateStatus(id, status);
         return ApiResponse.success("状态更新成功", response);
+    }
+
+    // ==================== 盖章接口 ====================
+
+    /**
+     * 执行盖章
+     * <p>
+     * 在合同指定位置盖章
+     * </p>
+     *
+     * @param id      合同ID
+     * @param request 盖章请求
+     * @return 盖章响应
+     */
+    @PostMapping("/{id}/seal")
+    public ApiResponse<ContractSealResponse> seal(
+            @PathVariable Long id,
+            @Valid @RequestBody ContractSealRequest request) {
+
+        log.info("执行盖章: contractId={}, sealId={}, positions={}",
+                id, request.getSealId(), request.getPositions().size());
+        ContractSealResponse response = sealStampService.stamp(id, request);
+        return ApiResponse.success("盖章成功", response);
+    }
+
+    /**
+     * 批量盖章
+     * <p>
+     * 使用多个印章在多个位置盖章
+     * </p>
+     *
+     * @param id       合同ID
+     * @param requests 盖章请求列表
+     * @return 盖章响应
+     */
+    @PostMapping("/{id}/seal/batch")
+    public ApiResponse<ContractSealResponse> batchSeal(
+            @PathVariable Long id,
+            @Valid @RequestBody List<ContractSealRequest> requests) {
+
+        log.info("批量盖章: contractId={}, 印章数={}", id, requests.size());
+        ContractSealResponse response = sealStampService.batchStamp(id, requests);
+        return ApiResponse.success("批量盖章成功", response);
+    }
+
+    /**
+     * 获取合同的签章记录
+     *
+     * @param id 合同ID
+     * @return 签章记录列表
+     */
+    @GetMapping("/{id}/seal/records")
+    public ApiResponse<List<SealRecordResponse>> getSealRecords(@PathVariable Long id) {
+        log.debug("获取签章记录: contractId={}", id);
+        List<SealRecordResponse> response = sealStampService.getRecords(id);
+        return ApiResponse.success(response);
     }
 }
