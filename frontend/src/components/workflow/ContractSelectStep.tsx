@@ -220,11 +220,11 @@ export default function ContractSelectStep({
 
                   {/* 合同信息 */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-gray-900 truncate pr-8" title={contract.originalName}>
-                      {contract.originalName}
+                    <h3 className="font-medium text-gray-900 truncate pr-8" title={contract.contractName}>
+                      {contract.contractName}
                     </h3>
                     <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
-                      <span>{contract.totalPages} 页</span>
+                      <span>{contract.pageCount} 页</span>
                       <span>·</span>
                       <span>{formatFileSize(contract.fileSize)}</span>
                       <span>·</span>

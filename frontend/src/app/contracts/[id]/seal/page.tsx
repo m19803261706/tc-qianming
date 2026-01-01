@@ -140,7 +140,7 @@ export default function ContractSealPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
             <Link href={`/contracts/${contract.id}`} className="hover:text-gray-700">
-              {contract.originalName}
+              {contract.contractName}
             </Link>
             <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -157,9 +157,9 @@ export default function ContractSealPage() {
               </span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span>{contract.originalName}</span>
+              <span>{contract.contractName}</span>
               <span>·</span>
-              <span>{contract.totalPages} 页</span>
+              <span>{contract.pageCount} 页</span>
             </div>
           </div>
         </div>

@@ -100,7 +100,17 @@ public class ContractServiceImpl implements ContractService {
         int pageCount = getPdfPageCount(savedPath);
 
         // 7. 创建数据库记录
+        // 如果用户没有填写合同名称，则使用原始文件名（去掉扩展名）
+        String contractName = request.getContractName();
+        if (contractName == null || contractName.isBlank()) {
+            // 去掉 .pdf 扩展名作为默认名称
+            contractName = originalName != null && originalName.toLowerCase().endsWith(".pdf")
+                    ? originalName.substring(0, originalName.length() - 4)
+                    : originalName;
+        }
+
         ContractFile contractFile = ContractFile.builder()
+                .contractName(contractName)
                 .fileName(originalName)
                 .originalPath(savedPath.toString())
                 .fileSize(file.getSize())

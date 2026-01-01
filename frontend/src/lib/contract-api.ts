@@ -9,18 +9,35 @@ import { get, post, del, put, API_BASE_URL, type ApiResponse, type PageResponse 
  */
 export interface Contract {
   id: number;
+  /** 合同名称（用户自定义的显示名称，如果没有设置则使用原始文件名） */
+  contractName: string;
+  /** 原始上传的文件名 */
   fileName: string;
-  originalName: string;
-  filePath: string;
-  fileUrl: string;
+  /** 原始文件 URL */
+  originalUrl: string;
+  /** 签章后文件 URL */
+  signedUrl?: string;
+  /** 文件大小（字节） */
   fileSize: number;
-  totalPages: number;
-  ownerId: number;
-  ownerType: number;
+  /** 文件大小（可读格式） */
+  fileSizeReadable?: string;
+  /** PDF 页数 */
+  pageCount: number;
+  /** 文件哈希值 */
+  fileHash?: string;
+  /** 状态（0-待签章 1-签章中 2-已签章 3-已作废） */
   status: number;
-  statusDesc: string;
+  /** 状态描述 */
+  statusText?: string;
+  /** 所有者 ID */
+  ownerId: number;
+  /** 所有者类型 */
+  ownerType: number;
+  /** 备注 */
   remark?: string;
+  /** 创建时间 */
   createTime: string;
+  /** 更新时间 */
   updateTime: string;
 }
 
@@ -119,17 +136,27 @@ export interface PerforationSealRequest {
 /**
  * 上传合同
  * 使用 API_BASE_URL 从 ./api 导入，避免硬编码
+ *
+ * @param file PDF 文件
+ * @param ownerId 所有者 ID
+ * @param ownerType 所有者类型（1-企业 2-个人）
+ * @param contractName 合同名称（可选，不填则使用文件名）
+ * @param remark 备注（可选）
  */
 export async function uploadContract(
   file: File,
   ownerId: number,
   ownerType: number = 1,
+  contractName?: string,
   remark?: string
 ): Promise<ApiResponse<Contract>> {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('ownerId', String(ownerId));
   formData.append('ownerType', String(ownerType));
+  if (contractName) {
+    formData.append('contractName', contractName);
+  }
   if (remark) {
     formData.append('remark', remark);
   }

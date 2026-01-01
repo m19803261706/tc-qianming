@@ -61,14 +61,14 @@ export default function CompleteStep({
           <h3 className="text-sm font-medium text-gray-700 mb-4">合同信息</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">文件名</span>
-              <span className="text-gray-900 font-medium truncate max-w-[200px]" title={contract.originalName}>
-                {contract.originalName}
+              <span className="text-gray-500">合同名称</span>
+              <span className="text-gray-900 font-medium truncate max-w-[200px]" title={contract.contractName}>
+                {contract.contractName}
               </span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-500">页数</span>
-              <span className="text-gray-900">{contract.totalPages} 页</span>
+              <span className="text-gray-900">{contract.pageCount} 页</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-500">状态</span>
@@ -86,8 +86,8 @@ export default function CompleteStep({
           <>
             {/* 下载按钮 */}
             <a
-              href={contract.fileUrl}
-              download={contract.originalName}
+              href={contract.originalUrl}
+              download={contract.fileName}
               className="inline-flex items-center px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -30,7 +30,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { cn } from '@/lib/utils';
 
 /**
  * 导航菜单配置

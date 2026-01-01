@@ -259,9 +259,14 @@ export default function ContractsPage() {
                           </svg>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 truncate max-w-xs" title={contract.originalName}>
-                            {contract.originalName}
+                          <div className="text-sm font-medium text-gray-900 truncate max-w-xs" title={contract.contractName}>
+                            {contract.contractName}
                           </div>
+                          {contract.fileName !== contract.contractName && (
+                            <div className="text-xs text-gray-400 truncate max-w-xs" title={contract.fileName}>
+                              原文件: {contract.fileName}
+                            </div>
+                          )}
                           {contract.remark && (
                             <div className="text-xs text-gray-500 truncate max-w-xs">
                               {contract.remark}
@@ -271,8 +276,8 @@ export default function ContractsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{contract.totalPages} 页</div>
-                      <div className="text-xs text-gray-500">{formatFileSize(contract.fileSize)}</div>
+                      <div className="text-sm text-gray-900">{contract.pageCount} 页</div>
+                      <div className="text-xs text-gray-500">{contract.fileSizeReadable || formatFileSize(contract.fileSize)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusStyle(contract.status)}`}>
@@ -309,8 +314,8 @@ export default function ContractsPage() {
                         </Link>
                         {/* 下载按钮 */}
                         <a
-                          href={contract.fileUrl}
-                          download={contract.originalName}
+                          href={contract.originalUrl}
+                          download={contract.fileName}
                           className="text-green-600 hover:text-green-900"
                           title="下载"
                         >
@@ -376,7 +381,7 @@ export default function ContractsPage() {
         onClose={() => setDeleteDialogOpen(false)}
         onConfirm={confirmDelete}
         title="确认删除"
-        message={`确定要删除合同「${deletingContract?.originalName}」吗？此操作不可恢复。`}
+        message={`确定要删除合同「${deletingContract?.contractName}」吗？此操作不可恢复。`}
         confirmText="删除"
         danger
         loading={deleteLoading}

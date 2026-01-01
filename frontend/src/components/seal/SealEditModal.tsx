@@ -89,6 +89,7 @@ export default function SealEditModal({
         sealType: String(seal.sealType),
         sealImage: seal.sealImage,
         sealImageUrl: seal.sealImageUrl || '',
+        sealSource: 1, // 编辑时使用默认值
         ownerId: seal.ownerId,
         ownerType: String(seal.ownerType),
         ownerName: seal.ownerName || '',

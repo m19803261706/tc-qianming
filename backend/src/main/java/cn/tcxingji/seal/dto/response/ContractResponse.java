@@ -25,7 +25,12 @@ public class ContractResponse {
     private Long id;
 
     /**
-     * 文件名
+     * 合同名称（用户自定义的显示名称）
+     */
+    private String contractName;
+
+    /**
+     * 文件名（原始上传的文件名）
      */
     private String fileName;
 
@@ -101,8 +106,14 @@ public class ContractResponse {
      * @return 响应 DTO
      */
     public static ContractResponse fromEntity(ContractFile entity) {
+        // 如果没有设置合同名称，则使用原始文件名
+        String displayName = entity.getContractName() != null && !entity.getContractName().isBlank()
+                ? entity.getContractName()
+                : entity.getFileName();
+
         return ContractResponse.builder()
                 .id(entity.getId())
+                .contractName(displayName)
                 .fileName(entity.getFileName())
                 .originalUrl("/uploads/contracts/" + extractRelativePath(entity.getOriginalPath()))
                 .signedUrl(entity.getSignedPath() != null ?

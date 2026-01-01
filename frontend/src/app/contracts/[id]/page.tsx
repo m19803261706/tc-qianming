@@ -156,13 +156,13 @@ export default function ContractDetailPage() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">{contract.originalName}</h1>
+                <h1 className="text-xl font-bold text-gray-900">{contract.contractName}</h1>
                 <div className="flex items-center gap-3 mt-2">
                   <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusStyle(contract.status)}`}>
                     {getStatusLabel(contract.status)}
                   </span>
                   <span className="text-sm text-gray-500">
-                    {contract.totalPages} 页 · {formatFileSize(contract.fileSize)}
+                    {contract.pageCount} 页 · {contract.fileSizeReadable || formatFileSize(contract.fileSize)}
                   </span>
                 </div>
                 {contract.remark && (
@@ -186,8 +186,8 @@ export default function ContractDetailPage() {
               )}
               {/* 下载按钮 */}
               <a
-                href={contract.fileUrl}
-                download={contract.originalName}
+                href={contract.originalUrl}
+                download={contract.fileName}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

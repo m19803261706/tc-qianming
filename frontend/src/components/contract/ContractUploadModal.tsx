@@ -28,6 +28,7 @@ export default function ContractUploadModal({
 }: ContractUploadModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [contractName, setContractName] = useState('');
   const [remark, setRemark] = useState('');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +37,7 @@ export default function ContractUploadModal({
   // 重置状态
   const reset = useCallback(() => {
     setFile(null);
+    setContractName('');
     setRemark('');
     setError(null);
     setUploading(false);
@@ -114,7 +116,7 @@ export default function ContractUploadModal({
     setError(null);
 
     try {
-      const response = await uploadContract(file, defaultOwnerId, 1, remark || undefined);
+      const response = await uploadContract(file, defaultOwnerId, 1, contractName || undefined, remark || undefined);
 
       if (response.success) {
         reset();
@@ -230,6 +232,21 @@ export default function ContractUploadModal({
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* 合同名称输入 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                合同名称（可选）
+              </label>
+              <input
+                type="text"
+                value={contractName}
+                onChange={(e) => setContractName(e.target.value)}
+                placeholder={file ? `默认使用: ${file.name.replace(/\.pdf$/i, '')}` : '不填则使用文件名作为合同名称'}
+                maxLength={200}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
 
             {/* 备注输入 */}

@@ -38,7 +38,13 @@ public class ContractFile {
     private Long id;
 
     /**
-     * 文件名（包含扩展名）
+     * 合同名称（用户自定义的显示名称）
+     */
+    @Column(name = "contract_name", length = 200)
+    private String contractName;
+
+    /**
+     * 文件名（原始上传的文件名，包含扩展名）
      */
     @Column(name = "file_name", nullable = false, length = 200)
     private String fileName;
