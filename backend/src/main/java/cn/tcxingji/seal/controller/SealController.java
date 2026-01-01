@@ -1,13 +1,16 @@
 package cn.tcxingji.seal.controller;
 
 import cn.tcxingji.seal.dto.request.SealCreateRequest;
+import cn.tcxingji.seal.dto.request.SealGenerateRequest;
 import cn.tcxingji.seal.dto.request.SealQueryRequest;
 import cn.tcxingji.seal.dto.request.SealUpdateRequest;
 import cn.tcxingji.seal.dto.response.ApiResponse;
 import cn.tcxingji.seal.dto.response.FileUploadResponse;
 import cn.tcxingji.seal.dto.response.PageResponse;
 import cn.tcxingji.seal.dto.response.SealResponse;
+import cn.tcxingji.seal.dto.response.SealTemplateResponse;
 import cn.tcxingji.seal.service.FileUploadService;
+import cn.tcxingji.seal.service.SealGeneratorService;
 import cn.tcxingji.seal.service.SealService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +37,7 @@ public class SealController {
 
     private final SealService sealService;
     private final FileUploadService fileUploadService;
+    private final SealGeneratorService sealGeneratorService;
 
     /**
      * 创建印章
@@ -164,5 +168,38 @@ public class SealController {
                 file.getOriginalFilename(), file.getSize());
         FileUploadResponse response = fileUploadService.uploadSealImage(file);
         return ApiResponse.success("印章图片上传成功", response);
+    }
+
+    // ==================== 印章生成接口 ====================
+
+    /**
+     * 自动生成印章图片
+     * <p>
+     * 根据企业名称和模板自动生成印章图片
+     * </p>
+     *
+     * @param request 生成请求
+     * @return 生成结果（包含图片路径和访问 URL）
+     */
+    @PostMapping("/generate")
+    public ApiResponse<FileUploadResponse> generateSeal(@Valid @RequestBody SealGenerateRequest request) {
+        log.info("生成印章请求: companyName={}, template={}",
+                request.getCompanyName(), request.getTemplateCode());
+        FileUploadResponse response = sealGeneratorService.generateSeal(request);
+        return ApiResponse.success("印章生成成功", response);
+    }
+
+    /**
+     * 获取印章模板列表
+     *
+     * @return 模板列表
+     */
+    @GetMapping("/templates")
+    public ApiResponse<List<SealTemplateResponse>> getTemplates() {
+        log.debug("获取印章模板列表");
+        List<SealTemplateResponse> templates = sealGeneratorService.getTemplates().stream()
+                .map(SealTemplateResponse::fromEnum)
+                .toList();
+        return ApiResponse.success(templates);
     }
 }
