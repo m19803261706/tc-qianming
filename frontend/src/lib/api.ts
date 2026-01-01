@@ -5,6 +5,12 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
+// 调试：打印 API 基础 URL
+if (typeof window !== 'undefined') {
+  console.log('[API] Base URL:', API_BASE_URL);
+  console.log('[API] Env value:', process.env.NEXT_PUBLIC_API_URL);
+}
+
 /**
  * 通用响应类型
  */
@@ -50,7 +56,9 @@ function buildUrl(path: string, params?: Record<string, string | number | undefi
       }
     });
   }
-  return url.toString();
+  const finalUrl = url.toString();
+  console.log('[API] buildUrl:', { path, API_BASE_URL, finalUrl });
+  return finalUrl;
 }
 
 /**
