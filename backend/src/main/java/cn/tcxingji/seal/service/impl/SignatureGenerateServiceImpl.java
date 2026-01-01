@@ -69,12 +69,20 @@ public class SignatureGenerateServiceImpl implements SignatureGenerateService {
      * fontFileName: 字体文件名（放在 resources/fonts/ 目录下）
      */
     private static final List<FontConfig> BUNDLED_FONTS = List.of(
+            // 楷书风格 - 正式签名
             new FontConfig("霞鹜文楷", "霞鹜文楷", "LXGW WenKai", true,
                     "优雅的楷书风格，适合正式签名", "LXGWWenKai-Regular.ttf"),
-            new FontConfig("霞鹜文楷轻体", "文楷轻体", "LXGW WenKai Light", true,
+            new FontConfig("霞鹜文楷轻体", "文楷轻体", "LXGW WenKai Light", false,
                     "纤细优美的楷书风格，清雅脱俗", "LXGWWenKai-Light.ttf"),
             new FontConfig("演示悠然小楷", "悠然小楷", "SlideYouran", true,
-                    "清新的小楷风格，如青竹新生", "SlideYouran.ttf")
+                    "清新的小楷风格，如青竹新生", "SlideYouran.ttf"),
+            // 行书风格 - 潇洒飘逸
+            new FontConfig("钟齐志莽行书", "志莽行书", "ZhongQiZhiMang", true,
+                    "潇洒飘逸骨架劲挺的行书风格", "ZhongQiZhiMang.ttf"),
+            new FontConfig("衡山行书", "衡山行书", "KouzanGyousho", true,
+                    "日本书法家青柳衡山的行书风格", "KouzanGyousho.ttf"),
+            new FontConfig("英椎行书", "英椎行书", "YingZhuiXingShu", true,
+                    "日系手写行书风格，优美流畅", "YingZhuiXingShu.ttf")
     );
 
     /**
