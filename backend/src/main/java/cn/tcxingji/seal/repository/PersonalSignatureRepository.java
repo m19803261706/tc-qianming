@@ -42,6 +42,16 @@ public interface PersonalSignatureRepository extends JpaRepository<PersonalSigna
     Page<PersonalSignature> findByUserId(Long userId, Pageable pageable);
 
     /**
+     * 根据用户ID和状态分页查询签名列表
+     *
+     * @param userId   用户ID
+     * @param status   状态
+     * @param pageable 分页参数
+     * @return 签名分页列表
+     */
+    Page<PersonalSignature> findByUserIdAndStatus(Long userId, Integer status, Pageable pageable);
+
+    /**
      * 根据用户ID和状态查询签名列表
      *
      * @param userId 用户ID
