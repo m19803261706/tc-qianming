@@ -19,6 +19,11 @@ export interface SealPlacement {
   height: number;
 }
 
+/**
+ * 缩放手柄位置类型
+ */
+type ResizeHandle = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
 interface SealPositionPickerProps {
   /** 页码 */
   pageNumber: number;
@@ -38,6 +43,10 @@ interface SealPositionPickerProps {
   onRemovePlacement: (id: string) => void;
   /** 印章默认尺寸 */
   defaultSealSize?: number;
+  /** 印章最小尺寸 */
+  minSealSize?: number;
+  /** 印章最大尺寸 */
+  maxSealSize?: number;
 }
 
 /**
@@ -59,10 +68,17 @@ export default function SealPositionPicker({
   onUpdatePlacement,
   onRemovePlacement,
   defaultSealSize = 80,
+  minSealSize = 30,
+  maxSealSize = 200,
 }: SealPositionPickerProps) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // 缩放状态
+  const [resizingId, setResizingId] = useState<string | null>(null);
+  const [resizeHandle, setResizeHandle] = useState<ResizeHandle | null>(null);
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0, originX: 0, originY: 0 });
 
   // 过滤当前页的印章
   const currentPagePlacements = placements.filter(p => p.pageNumber === pageNumber);
@@ -136,7 +152,94 @@ export default function SealPositionPicker({
     onRemovePlacement(id);
   }, [onRemovePlacement]);
 
-  // 监听全局鼠标事件
+  // 开始缩放
+  const handleResizeStart = useCallback((e: React.MouseEvent, placement: SealPlacement, handle: ResizeHandle) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setResizingId(placement.id);
+    setResizeHandle(handle);
+    setResizeStart({
+      x: e.clientX,
+      y: e.clientY,
+      width: placement.width,
+      height: placement.height,
+      originX: placement.x,
+      originY: placement.y,
+    });
+  }, []);
+
+  // 缩放移动
+  const handleResizeMove = useCallback((e: React.MouseEvent) => {
+    if (!resizingId || !resizeHandle) return;
+
+    const placement = placements.find(p => p.id === resizingId);
+    if (!placement) return;
+
+    // 计算鼠标移动距离
+    const deltaX = e.clientX - resizeStart.x;
+    const deltaY = e.clientY - resizeStart.y;
+
+    // 根据手柄位置计算新尺寸（保持 1:1 比例）
+    let newSize = resizeStart.width;
+    let newX = resizeStart.originX;
+    let newY = resizeStart.originY;
+
+    // 使用较大的变化量来确定缩放方向
+    const delta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
+
+    switch (resizeHandle) {
+      case 'bottom-right':
+        // 右下角：增大delta = 放大
+        newSize = resizeStart.width + delta;
+        break;
+      case 'top-left':
+        // 左上角：减小delta = 放大
+        newSize = resizeStart.width - delta;
+        newX = resizeStart.originX + (resizeStart.width - newSize);
+        newY = resizeStart.originY + (resizeStart.height - newSize);
+        break;
+      case 'top-right':
+        // 右上角：X增大=放大, Y减小=放大
+        newSize = resizeStart.width + deltaX;
+        newY = resizeStart.originY + (resizeStart.height - newSize);
+        break;
+      case 'bottom-left':
+        // 左下角：X减小=放大, Y增大=放大
+        newSize = resizeStart.width - deltaX;
+        newX = resizeStart.originX + (resizeStart.width - newSize);
+        break;
+    }
+
+    // 限制尺寸范围
+    newSize = Math.max(minSealSize, Math.min(maxSealSize, newSize));
+
+    // 重新计算位置以适应尺寸限制
+    if (resizeHandle === 'top-left' || resizeHandle === 'bottom-left') {
+      newX = resizeStart.originX + (resizeStart.width - newSize);
+    }
+    if (resizeHandle === 'top-left' || resizeHandle === 'top-right') {
+      newY = resizeStart.originY + (resizeStart.height - newSize);
+    }
+
+    // 边界检查
+    newX = Math.max(0, Math.min(newX, pageWidth - newSize));
+    newY = Math.max(0, Math.min(newY, pageHeight - newSize));
+
+    onUpdatePlacement(resizingId, {
+      x: newX,
+      y: newY,
+      width: newSize,
+      height: newSize,
+    });
+  }, [resizingId, resizeHandle, resizeStart, placements, minSealSize, maxSealSize, pageWidth, pageHeight, onUpdatePlacement]);
+
+  // 结束缩放
+  const handleResizeEnd = useCallback(() => {
+    setResizingId(null);
+    setResizeHandle(null);
+  }, []);
+
+  // 监听全局鼠标事件（拖拽）
   useEffect(() => {
     if (draggingId) {
       const handleMouseUp = () => handleDragEnd();
@@ -145,13 +248,31 @@ export default function SealPositionPicker({
     }
   }, [draggingId, handleDragEnd]);
 
+  // 监听全局鼠标事件（缩放）
+  useEffect(() => {
+    if (resizingId) {
+      const handleMouseUp = () => handleResizeEnd();
+      window.addEventListener('mouseup', handleMouseUp);
+      return () => window.removeEventListener('mouseup', handleMouseUp);
+    }
+  }, [resizingId, handleResizeEnd]);
+
+  // 合并鼠标移动处理
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (draggingId) {
+      handleDragMove(e);
+    } else if (resizingId) {
+      handleResizeMove(e);
+    }
+  }, [draggingId, resizingId, handleDragMove, handleResizeMove]);
+
   return (
     <div
       ref={containerRef}
-      className={`absolute inset-0 ${selectedSeal ? 'cursor-crosshair' : ''}`}
+      className={`absolute inset-0 ${selectedSeal && !resizingId ? 'cursor-crosshair' : ''}`}
       style={{ pointerEvents: 'auto' }}
-      onClick={handleClick}
-      onMouseMove={draggingId ? handleDragMove : undefined}
+      onClick={resizingId ? undefined : handleClick}
+      onMouseMove={(draggingId || resizingId) ? handleMouseMove : undefined}
     >
       {/* 已放置的印章 */}
       {currentPagePlacements.map((placement) => (
@@ -198,11 +319,41 @@ export default function SealPositionPicker({
             ×
           </button>
 
-          {/* 坐标信息（悬停显示） */}
+          {/* 坐标和尺寸信息（悬停显示） */}
           <div className="absolute -bottom-6 left-0 text-xs text-gray-600 bg-white/80 px-1 rounded
                           opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            ({Math.round(placement.x)}, {Math.round(placement.y)})
+            ({Math.round(placement.x)}, {Math.round(placement.y)}) {Math.round(placement.width)}px
           </div>
+
+          {/* 四角缩放手柄 */}
+          {/* 左上角 */}
+          <div
+            onMouseDown={(e) => handleResizeStart(e, placement, 'top-left')}
+            className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-500 rounded-full cursor-nw-resize
+                       opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600 hover:scale-125"
+            title="拖拽缩放"
+          />
+          {/* 右上角 */}
+          <div
+            onMouseDown={(e) => handleResizeStart(e, placement, 'top-right')}
+            className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 rounded-full cursor-ne-resize
+                       opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600 hover:scale-125"
+            title="拖拽缩放"
+          />
+          {/* 左下角 */}
+          <div
+            onMouseDown={(e) => handleResizeStart(e, placement, 'bottom-left')}
+            className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-500 rounded-full cursor-sw-resize
+                       opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600 hover:scale-125"
+            title="拖拽缩放"
+          />
+          {/* 右下角 */}
+          <div
+            onMouseDown={(e) => handleResizeStart(e, placement, 'bottom-right')}
+            className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-blue-500 rounded-full cursor-se-resize
+                       opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600 hover:scale-125"
+            title="拖拽缩放"
+          />
         </div>
       ))}
 

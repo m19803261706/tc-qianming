@@ -201,14 +201,18 @@ public class ContractServiceImpl implements ContractService {
     @Override
     public ContractPreviewResponse preview(Long id) {
         ContractFile contractFile = findContractOrThrow(id);
-        Path pdfPath = Paths.get(contractFile.getOriginalPath());
+
+        // 优先使用签章后的 PDF，否则使用原始 PDF
+        boolean isSigned = contractFile.getSignedPath() != null && !contractFile.getSignedPath().isEmpty();
+        String pathToUse = isSigned ? contractFile.getSignedPath() : contractFile.getOriginalPath();
+        Path pdfPath = Paths.get(pathToUse);
 
         if (!Files.exists(pdfPath)) {
             throw new BusinessException("PDF 文件不存在");
         }
 
-        // 生成所有页的预览图
-        List<String> previewUrls = generatePreviewImages(contractFile, pdfPath, -1);
+        // 生成所有页的预览图（签章后使用不同的子目录）
+        List<String> previewUrls = generatePreviewImages(contractFile, pdfPath, -1, isSigned);
 
         return ContractPreviewResponse.builder()
                 .contractId(id)
@@ -222,7 +226,11 @@ public class ContractServiceImpl implements ContractService {
     @Override
     public ContractPreviewResponse previewPage(Long id, int page) {
         ContractFile contractFile = findContractOrThrow(id);
-        Path pdfPath = Paths.get(contractFile.getOriginalPath());
+
+        // 优先使用签章后的 PDF，否则使用原始 PDF
+        boolean isSigned = contractFile.getSignedPath() != null && !contractFile.getSignedPath().isEmpty();
+        String pathToUse = isSigned ? contractFile.getSignedPath() : contractFile.getOriginalPath();
+        Path pdfPath = Paths.get(pathToUse);
 
         if (!Files.exists(pdfPath)) {
             throw new BusinessException("PDF 文件不存在");
@@ -232,8 +240,8 @@ public class ContractServiceImpl implements ContractService {
             throw new BusinessException("页码超出范围，总页数: " + contractFile.getPageCount());
         }
 
-        // 生成单页预览图
-        List<String> previewUrls = generatePreviewImages(contractFile, pdfPath, page);
+        // 生成单页预览图（签章后使用不同的子目录）
+        List<String> previewUrls = generatePreviewImages(contractFile, pdfPath, page, isSigned);
 
         return ContractPreviewResponse.builder()
                 .contractId(id)
@@ -367,14 +375,16 @@ public class ContractServiceImpl implements ContractService {
      * @param contractFile 合同文件
      * @param pdfPath      PDF 路径
      * @param targetPage   目标页码（-1 表示所有页）
+     * @param isSigned     是否为签章后的 PDF（签章后使用不同的子目录）
      * @return 预览图片 URL 列表
      */
-    private List<String> generatePreviewImages(ContractFile contractFile, Path pdfPath, int targetPage) {
+    private List<String> generatePreviewImages(ContractFile contractFile, Path pdfPath, int targetPage, boolean isSigned) {
         List<String> previewUrls = new ArrayList<>();
 
-        // 预览图存储目录
-        String previewDir = String.format("%s/preview/%d",
-                fileUploadConfig.getContractPath(), contractFile.getId());
+        // 预览图存储目录（签章后使用 signed 子目录）
+        String subDir = isSigned ? "signed" : "original";
+        String previewDir = String.format("%s/preview/%d/%s",
+                fileUploadConfig.getContractPath(), contractFile.getId(), subDir);
 
         try {
             Path previewPath = Paths.get(previewDir);
@@ -400,8 +410,8 @@ public class ContractServiceImpl implements ContractService {
                         log.debug("生成预览图: {}", imagePath);
                     }
 
-                    String url = String.format("/uploads/contracts/preview/%d/%s",
-                            contractFile.getId(), imageName);
+                    String url = String.format("/uploads/contracts/preview/%d/%s/%s",
+                            contractFile.getId(), subDir, imageName);
                     previewUrls.add(url);
                 }
             }
