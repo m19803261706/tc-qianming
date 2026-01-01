@@ -109,6 +109,36 @@ public interface ContractFileRepository extends JpaRepository<ContractFile, Long
     Page<ContractFile> searchByFileName(@Param("fileName") String fileName, @Param("ownerId") Long ownerId, Pageable pageable);
 
     /**
+     * 根据关键词搜索（匹配合同名称或文件名）
+     *
+     * @param keyword  关键词
+     * @param pageable 分页参数
+     * @return 合同文件分页列表
+     */
+    @Query("SELECT c FROM ContractFile c WHERE c.contractName LIKE %:keyword% OR c.fileName LIKE %:keyword% ORDER BY c.createTime DESC")
+    Page<ContractFile> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * 根据关键词和状态搜索
+     *
+     * @param keyword  关键词
+     * @param status   状态
+     * @param pageable 分页参数
+     * @return 合同文件分页列表
+     */
+    @Query("SELECT c FROM ContractFile c WHERE (c.contractName LIKE %:keyword% OR c.fileName LIKE %:keyword%) AND c.status = :status ORDER BY c.createTime DESC")
+    Page<ContractFile> searchByKeywordAndStatus(@Param("keyword") String keyword, @Param("status") Integer status, Pageable pageable);
+
+    /**
+     * 根据状态分页查询
+     *
+     * @param status   状态
+     * @param pageable 分页参数
+     * @return 合同文件分页列表
+     */
+    Page<ContractFile> findByStatus(Integer status, Pageable pageable);
+
+    /**
      * 统计所有者的合同文件数量
      *
      * @param ownerId 所有者ID

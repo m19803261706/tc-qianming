@@ -149,21 +149,26 @@ public class ContractServiceImpl implements ContractService {
 
         Page<ContractFile> page;
 
-        if (request.getFileName() != null && !request.getFileName().isEmpty()
-                && request.getOwnerId() != null) {
-            // 按文件名搜索
-            page = contractFileRepository.searchByFileName(
-                    request.getFileName(),
-                    request.getOwnerId(),
-                    pageRequest
-            );
-        } else if (request.getOwnerId() != null && request.getStatus() != null) {
-            // 按所有者和状态查询
-            page = contractFileRepository.findByOwnerIdAndStatus(
-                    request.getOwnerId(),
+        // 获取搜索关键词（优先使用 keyword，兼容旧的 fileName 参数）
+        String keyword = request.getKeyword();
+        if ((keyword == null || keyword.isEmpty()) && request.getFileName() != null) {
+            keyword = request.getFileName();
+        }
+        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+
+        if (hasKeyword && request.getStatus() != null) {
+            // 按关键词 + 状态搜索
+            page = contractFileRepository.searchByKeywordAndStatus(
+                    keyword.trim(),
                     request.getStatus(),
                     pageRequest
             );
+        } else if (hasKeyword) {
+            // 仅按关键词搜索（匹配合同名称或文件名）
+            page = contractFileRepository.searchByKeyword(keyword.trim(), pageRequest);
+        } else if (request.getStatus() != null) {
+            // 仅按状态筛选
+            page = contractFileRepository.findByStatus(request.getStatus(), pageRequest);
         } else if (request.getOwnerId() != null && request.getOwnerType() != null) {
             // 按所有者查询
             page = contractFileRepository.findByOwnerIdAndOwnerType(

@@ -32,9 +32,15 @@ public class ContractQueryRequest {
     private Integer status;
 
     /**
-     * 文件名关键词
+     * 文件名关键词（已废弃，请使用 keyword）
      */
+    @Deprecated
     private String fileName;
+
+    /**
+     * 搜索关键词（匹配合同名称或文件名）
+     */
+    private String keyword;
 
     /**
      * 页码（从1开始）
