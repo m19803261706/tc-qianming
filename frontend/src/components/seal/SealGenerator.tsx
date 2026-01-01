@@ -7,7 +7,7 @@
  * 功能：模板选择、企业名称输入、中心文字、颜色选择、实时预览
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { Loader2, Zap, Check, Star, Building2, FileText, Stamp } from 'lucide-react';
 
@@ -46,11 +46,18 @@ interface SealGeneratorProps {
   onSuccess: (result: FileUploadResponse) => void;
 }
 
-// 模板图标映射
+// 模板图标映射 (使用 API 返回的 code)
 const templateIcons: Record<string, React.ReactNode> = {
-  CIRCLE_STANDARD: <Star className="w-5 h-5" />,
-  ELLIPSE_FINANCE: <Building2 className="w-5 h-5" />,
-  SQUARE_LEGAL: <FileText className="w-5 h-5" />,
+  standard_circle: <Star className="w-5 h-5" />,
+  oval_finance: <Building2 className="w-5 h-5" />,
+  square_legal: <FileText className="w-5 h-5" />,
+};
+
+// 模板描述映射
+const templateDescriptions: Record<string, string> = {
+  standard_circle: '企业公章标准样式',
+  oval_finance: '适用于财务专用章',
+  square_legal: '法人代表签名章',
 };
 
 // 预设颜色
@@ -102,11 +109,16 @@ export default function SealGenerator({
     }
   }, [templates.length]);
 
-  // 弹窗打开时加载模板
-  const handleOpenChange = (open: boolean) => {
-    if (open) {
+  // 弹窗打开时加载模板 (使用 useEffect 监听 isOpen 变化)
+  useEffect(() => {
+    if (isOpen) {
       loadTemplates();
-    } else {
+    }
+  }, [isOpen, loadTemplates]);
+
+  // 处理弹窗关闭
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
       handleClose();
     }
   };
@@ -225,16 +237,16 @@ export default function SealGenerator({
                             <span className="font-medium text-foreground">
                               {template.name}
                             </span>
-                            {template.code === 'CIRCLE_STANDARD' && (
+                            {template.code === 'standard_circle' && (
                               <Badge variant="secondary" className="text-xs">推荐</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mt-0.5">
-                            {template.description}
+                            {templateDescriptions[template.code] || '印章模板'}
                           </p>
                           <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                            <span>{template.defaultSize}px</span>
-                            <span>{template.defaultFont}</span>
+                            <span>{template.baseSize}px</span>
+                            <span>{template.fontName}</span>
                           </div>
                         </div>
                         <RadioGroupItem
