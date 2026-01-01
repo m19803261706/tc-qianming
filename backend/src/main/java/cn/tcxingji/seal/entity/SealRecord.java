@@ -84,7 +84,7 @@ public class SealRecord {
      * 签章类型
      * 1-普通章 2-骑缝章 3-个人签名
      */
-    @Column(name = "seal_type", nullable = false)
+    @Column(name = "seal_type", nullable = false, columnDefinition = "TINYINT")
     private Integer sealType;
 
     /**

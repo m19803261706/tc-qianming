@@ -46,7 +46,7 @@ public class SealInfo {
      * 印章类型
      * 1-企业公章 2-合同专用章 3-财务章 4-个人签名
      */
-    @Column(name = "seal_type", nullable = false)
+    @Column(name = "seal_type", nullable = false, columnDefinition = "TINYINT")
     private Integer sealType;
 
     /**
@@ -59,7 +59,7 @@ public class SealInfo {
      * 印章来源
      * 1-上传 2-系统生成 3-模板
      */
-    @Column(name = "seal_source", nullable = false)
+    @Column(name = "seal_source", nullable = false, columnDefinition = "TINYINT")
     private Integer sealSource;
 
     /**
@@ -72,14 +72,14 @@ public class SealInfo {
      * 所有者类型
      * 1-企业 2-个人
      */
-    @Column(name = "owner_type", nullable = false)
+    @Column(name = "owner_type", nullable = false, columnDefinition = "TINYINT")
     private Integer ownerType;
 
     /**
      * 状态
      * 0-禁用 1-启用
      */
-    @Column(name = "status")
+    @Column(name = "status", columnDefinition = "TINYINT")
     @Builder.Default
     private Integer status = 1;
 

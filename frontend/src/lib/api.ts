@@ -13,6 +13,7 @@ export interface ApiResponse<T> {
   message: string;
   data: T;
   success: boolean;
+  timestamp?: number;
 }
 
 /**
@@ -75,7 +76,12 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<A
     throw new Error(`HTTP error! status: ${response.status}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  // 根据 code 判断是否成功，添加 success 属性
+  return {
+    ...result,
+    success: result.code === 200,
+  };
 }
 
 /**
@@ -129,5 +135,10 @@ export async function uploadFile<T>(path: string, file: File, fieldName = 'file'
     throw new Error(`HTTP error! status: ${response.status}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  // 根据 code 判断是否成功，添加 success 属性
+  return {
+    ...result,
+    success: result.code === 200,
+  };
 }

@@ -59,7 +59,7 @@ public class PersonalSignature {
      * 签名类型
      * 1-上传图片 2-手写签名 3-字体生成
      */
-    @Column(name = "signature_type", nullable = false)
+    @Column(name = "signature_type", nullable = false, columnDefinition = "TINYINT")
     private Integer signatureType;
 
     /**
@@ -84,7 +84,7 @@ public class PersonalSignature {
      * 是否默认签名
      * 0-否 1-是
      */
-    @Column(name = "is_default")
+    @Column(name = "is_default", columnDefinition = "TINYINT")
     @Builder.Default
     private Integer isDefault = 0;
 
@@ -92,7 +92,7 @@ public class PersonalSignature {
      * 状态
      * 0-禁用 1-启用
      */
-    @Column(name = "status")
+    @Column(name = "status", columnDefinition = "TINYINT")
     @Builder.Default
     private Integer status = 1;
 

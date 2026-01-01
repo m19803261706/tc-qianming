@@ -77,7 +77,7 @@ public class ContractFile {
      * 状态
      * 0-待签章 1-签章中 2-已签章 3-已作废
      */
-    @Column(name = "status")
+    @Column(name = "status", columnDefinition = "TINYINT")
     @Builder.Default
     private Integer status = 0;
 
@@ -91,7 +91,7 @@ public class ContractFile {
      * 所有者类型
      * 1-企业 2-个人
      */
-    @Column(name = "owner_type")
+    @Column(name = "owner_type", columnDefinition = "TINYINT")
     @Builder.Default
     private Integer ownerType = 1;
 
