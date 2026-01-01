@@ -404,6 +404,40 @@ public class SealStampServiceImpl implements SealStampService {
         contract.setSignedPath(signedPath.toString());
         contract.setStatus(ContractFile.Status.SIGNED);
         contractFileRepository.save(contract);
+
+        // 清理旧的签章后预览图缓存，确保下次预览时重新生成
+        clearSignedPreviewCache(contract.getId());
+    }
+
+    /**
+     * 清理签章后预览图缓存
+     * <p>
+     * 每次重新签章后，需要清理旧的预览图缓存，确保显示最新的签章效果
+     * </p>
+     */
+    private void clearSignedPreviewCache(Long contractId) {
+        String previewDir = String.format("%s/preview/%d/signed",
+                fileUploadConfig.getContractPath(), contractId);
+        Path previewPath = Paths.get(previewDir);
+
+        if (Files.exists(previewPath)) {
+            try {
+                // 删除目录下所有预览图文件
+                Files.list(previewPath)
+                        .filter(Files::isRegularFile)
+                        .forEach(file -> {
+                            try {
+                                Files.delete(file);
+                                log.debug("删除旧预览图: {}", file);
+                            } catch (IOException e) {
+                                log.warn("删除预览图失败: {}", file, e);
+                            }
+                        });
+                log.info("清理签章预览图缓存: contractId={}", contractId);
+            } catch (IOException e) {
+                log.warn("清理预览图缓存失败: contractId={}", contractId, e);
+            }
+        }
     }
 
     /**
