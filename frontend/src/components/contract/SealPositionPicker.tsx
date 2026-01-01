@@ -80,6 +80,9 @@ export default function SealPositionPicker({
   const [resizeHandle, setResizeHandle] = useState<ResizeHandle | null>(null);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0, originX: 0, originY: 0 });
 
+  // 用于防止拖拽/缩放结束后立即触发 click 添加新印章
+  const justFinishedActionRef = useRef(false);
+
   // 过滤当前页的印章
   const currentPagePlacements = placements.filter(p => p.pageNumber === pageNumber);
 
@@ -88,8 +91,11 @@ export default function SealPositionPicker({
 
   // 处理点击添加印章
   const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    // 如果正在拖拽或缩放，不添加新印章
-    if (!selectedSeal || draggingId || resizingId) return;
+    // 如果正在拖拽或缩放，或刚刚完成拖拽/缩放操作，不添加新印章
+    if (!selectedSeal || draggingId || resizingId || justFinishedActionRef.current) {
+      justFinishedActionRef.current = false; // 重置标记
+      return;
+    }
 
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left - defaultSealSize / 2;
@@ -145,6 +151,8 @@ export default function SealPositionPicker({
   // 结束拖拽
   const handleDragEnd = useCallback(() => {
     setDraggingId(null);
+    // 标记刚刚完成拖拽，防止触发 click 添加新印章
+    justFinishedActionRef.current = true;
   }, []);
 
   // 删除印章
@@ -238,6 +246,8 @@ export default function SealPositionPicker({
   const handleResizeEnd = useCallback(() => {
     setResizingId(null);
     setResizeHandle(null);
+    // 标记刚刚完成缩放，防止触发 click 添加新印章
+    justFinishedActionRef.current = true;
   }, []);
 
   // 监听全局鼠标事件（拖拽）
