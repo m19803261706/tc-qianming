@@ -47,15 +47,15 @@ spring:
       max-file-size: 50MB
       max-request-size: 50MB
 
-# 文件存储配置
+# 文件存储配置（开发环境使用项目目录，生产环境应配置为服务器路径）
 file:
   upload:
     # 印章图片存储路径
-    seal-path: /data/tc-seal/uploads/seals
+    seal-path: ./uploads/seals
     # 合同文件存储路径
-    contract-path: /data/tc-seal/uploads/contracts
+    contract-path: ./uploads/contracts
     # 签名图片存储路径
-    signature-path: /data/tc-seal/uploads/signatures
+    signature-path: ./uploads/signatures
 
 # 日志配置
 logging:
