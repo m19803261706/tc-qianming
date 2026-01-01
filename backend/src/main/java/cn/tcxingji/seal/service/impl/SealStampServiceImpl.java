@@ -2,6 +2,7 @@ package cn.tcxingji.seal.service.impl;
 
 import cn.tcxingji.seal.config.FileUploadConfig;
 import cn.tcxingji.seal.dto.request.ContractSealRequest;
+import cn.tcxingji.seal.dto.request.PerforationSealRequest;
 import cn.tcxingji.seal.dto.request.SealPositionRequest;
 import cn.tcxingji.seal.dto.response.ContractSealResponse;
 import cn.tcxingji.seal.dto.response.SealRecordResponse;
@@ -19,11 +20,16 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -139,6 +145,117 @@ public class SealStampServiceImpl implements SealStampService {
         return records.stream()
                 .map(SealRecordResponse::fromEntity)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public ContractSealResponse perforationStamp(Long contractId, PerforationSealRequest request) {
+        // 1. 验证合同
+        ContractFile contract = findContractOrThrow(contractId);
+        validateContractStatus(contract);
+
+        // 2. 验证印章
+        SealInfo sealInfo = findSealOrThrow(request.getSealId());
+        validateSealStatus(sealInfo);
+
+        // 3. 加载源 PDF
+        Path sourcePath = Paths.get(contract.getOriginalPath());
+        if (!Files.exists(sourcePath)) {
+            throw new BusinessException("合同文件不存在");
+        }
+
+        List<SealRecord> records = new ArrayList<>();
+        Path signedPath;
+
+        try (PDDocument document = Loader.loadPDF(sourcePath.toFile())) {
+            int totalPages = document.getNumberOfPages();
+            if (totalPages < 2) {
+                throw new BusinessException("骑缝章需要至少2页的PDF文档");
+            }
+
+            // 4. 加载印章图片
+            Path sealImagePath = getSealImagePath(sealInfo);
+            if (!Files.exists(sealImagePath)) {
+                throw new BusinessException("印章图片不存在: " + sealInfo.getSealName());
+            }
+            BufferedImage sealImage = ImageIO.read(sealImagePath.toFile());
+
+            // 5. 计算每页印章切片高度
+            float sealWidth = request.getSealWidth().floatValue();
+            float sealHeight = request.getSealHeight().floatValue();
+            float sliceHeight = sealHeight / totalPages;
+
+            // 印章图片的每切片像素高度
+            int imgSliceHeight = sealImage.getHeight() / totalPages;
+
+            LocalDateTime now = LocalDateTime.now();
+
+            // 6. 为每页绘制印章切片
+            for (int i = 0; i < totalPages; i++) {
+                PDPage page = document.getPage(i);
+                PDRectangle mediaBox = page.getMediaBox();
+
+                // 切割印章图片
+                int srcY = i * imgSliceHeight;
+                int srcHeight = Math.min(imgSliceHeight, sealImage.getHeight() - srcY);
+                BufferedImage sliceImage = sealImage.getSubimage(
+                        0, srcY,
+                        sealImage.getWidth(), srcHeight
+                );
+
+                // 转换为 PDImageXObject
+                PDImageXObject pdSlice = LosslessFactory.createFromImage(document, sliceImage);
+
+                // 计算位置：右边缘居中
+                float edgeMargin = request.getEdgeMargin() != null
+                        ? request.getEdgeMargin().floatValue()
+                        : sealWidth / 2;  // 默认一半在页面内
+                float x = mediaBox.getWidth() - edgeMargin;
+                float yOffset = request.getYOffset().floatValue();
+                // 居中位置 + 偏移
+                float y = (mediaBox.getHeight() - sliceHeight) / 2 + yOffset;
+
+                // 绘制印章切片
+                try (PDPageContentStream contentStream = new PDPageContentStream(
+                        document, page, PDPageContentStream.AppendMode.APPEND, true, true)) {
+                    contentStream.drawImage(pdSlice, x, y, sealWidth, sliceHeight);
+                }
+
+                log.debug("绘制骑缝章切片: page={}, x={}, y={}, slice={}/{}",
+                        i + 1, x, y, i + 1, totalPages);
+
+                // 保存签章记录
+                SealRecord record = SealRecord.builder()
+                        .contractId(contract.getId())
+                        .sealId(sealInfo.getId())
+                        .pageNumber(i + 1)
+                        .positionX(BigDecimal.valueOf(x))
+                        .positionY(BigDecimal.valueOf(y))
+                        .sealWidth(request.getSealWidth())
+                        .sealHeight(BigDecimal.valueOf(sliceHeight))
+                        .sealType(SealRecord.SealType.PERFORATION)
+                        .operatorId(request.getOperatorId())
+                        .operatorName(request.getOperatorName())
+                        .sealTime(now)
+                        .build();
+                records.add(sealRecordRepository.save(record));
+            }
+
+            // 7. 保存签章后文件
+            signedPath = saveSignedDocument(document, contract);
+
+        } catch (IOException e) {
+            log.error("骑缝章处理失败: contractId={}", contractId, e);
+            throw new BusinessException("骑缝章处理失败: " + e.getMessage());
+        }
+
+        // 8. 更新合同状态
+        updateContractSigned(contract, signedPath);
+
+        log.info("骑缝章盖章成功: contractId={}, sealId={}, pages={}",
+                contractId, request.getSealId(), records.size());
+
+        return buildResponse(contract, signedPath, records);
     }
 
     // ==================== 核心盖章逻辑 ====================

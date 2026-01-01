@@ -1,6 +1,7 @@
 package cn.tcxingji.seal.service;
 
 import cn.tcxingji.seal.dto.request.ContractSealRequest;
+import cn.tcxingji.seal.dto.request.PerforationSealRequest;
 import cn.tcxingji.seal.dto.response.ContractSealResponse;
 import cn.tcxingji.seal.dto.response.SealRecordResponse;
 
@@ -47,4 +48,16 @@ public interface SealStampService {
      * @return 签章记录列表
      */
     List<SealRecordResponse> getRecords(Long contractId);
+
+    /**
+     * 添加骑缝章
+     * <p>
+     * 将印章按页数分割，每页右边缘显示一部分，合并后形成完整印章
+     * </p>
+     *
+     * @param contractId 合同ID
+     * @param request    骑缝章请求
+     * @return 盖章响应
+     */
+    ContractSealResponse perforationStamp(Long contractId, PerforationSealRequest request);
 }

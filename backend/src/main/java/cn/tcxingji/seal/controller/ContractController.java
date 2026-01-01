@@ -3,6 +3,7 @@ package cn.tcxingji.seal.controller;
 import cn.tcxingji.seal.dto.request.ContractQueryRequest;
 import cn.tcxingji.seal.dto.request.ContractSealRequest;
 import cn.tcxingji.seal.dto.request.ContractUploadRequest;
+import cn.tcxingji.seal.dto.request.PerforationSealRequest;
 import cn.tcxingji.seal.dto.response.ApiResponse;
 import cn.tcxingji.seal.dto.response.ContractPreviewResponse;
 import cn.tcxingji.seal.dto.response.ContractResponse;
@@ -223,5 +224,25 @@ public class ContractController {
         log.debug("获取签章记录: contractId={}", id);
         List<SealRecordResponse> response = sealStampService.getRecords(id);
         return ApiResponse.success(response);
+    }
+
+    /**
+     * 添加骑缝章
+     * <p>
+     * 将印章按页数分割，每页右边缘显示一部分，合并后形成完整印章
+     * </p>
+     *
+     * @param id      合同ID
+     * @param request 骑缝章请求
+     * @return 盖章响应
+     */
+    @PostMapping("/{id}/seal/perforation")
+    public ApiResponse<ContractSealResponse> perforationSeal(
+            @PathVariable Long id,
+            @Valid @RequestBody PerforationSealRequest request) {
+
+        log.info("添加骑缝章: contractId={}, sealId={}", id, request.getSealId());
+        ContractSealResponse response = sealStampService.perforationStamp(id, request);
+        return ApiResponse.success("骑缝章添加成功", response);
     }
 }
