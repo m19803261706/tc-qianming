@@ -170,6 +170,80 @@ public interface PersonalSignatureRepository extends JpaRepository<PersonalSigna
      */
     void deleteByUserId(Long userId);
 
+    // ==================== 管理后台查询方法 ====================
+
+    /**
+     * 根据状态分页查询
+     *
+     * @param status   状态
+     * @param pageable 分页参数
+     * @return 签名分页列表
+     */
+    Page<PersonalSignature> findByStatus(Integer status, Pageable pageable);
+
+    /**
+     * 根据签名类型分页查询
+     *
+     * @param signatureType 签名类型
+     * @param pageable      分页参数
+     * @return 签名分页列表
+     */
+    Page<PersonalSignature> findBySignatureType(Integer signatureType, Pageable pageable);
+
+    /**
+     * 根据关键词搜索（匹配签名名称）
+     *
+     * @param keyword  关键词
+     * @param pageable 分页参数
+     * @return 签名分页列表
+     */
+    @Query("SELECT p FROM PersonalSignature p WHERE p.signatureName LIKE %:keyword% ORDER BY p.createTime DESC")
+    Page<PersonalSignature> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * 根据关键词和状态搜索
+     *
+     * @param keyword  关键词
+     * @param status   状态
+     * @param pageable 分页参数
+     * @return 签名分页列表
+     */
+    @Query("SELECT p FROM PersonalSignature p WHERE p.signatureName LIKE %:keyword% AND p.status = :status ORDER BY p.createTime DESC")
+    Page<PersonalSignature> searchByKeywordAndStatus(@Param("keyword") String keyword, @Param("status") Integer status, Pageable pageable);
+
+    /**
+     * 根据关键词和签名类型搜索
+     *
+     * @param keyword       关键词
+     * @param signatureType 签名类型
+     * @param pageable      分页参数
+     * @return 签名分页列表
+     */
+    @Query("SELECT p FROM PersonalSignature p WHERE p.signatureName LIKE %:keyword% AND p.signatureType = :signatureType ORDER BY p.createTime DESC")
+    Page<PersonalSignature> searchByKeywordAndType(@Param("keyword") String keyword, @Param("signatureType") Integer signatureType, Pageable pageable);
+
+    /**
+     * 根据关键词、状态和签名类型搜索
+     *
+     * @param keyword       关键词
+     * @param status        状态
+     * @param signatureType 签名类型
+     * @param pageable      分页参数
+     * @return 签名分页列表
+     */
+    @Query("SELECT p FROM PersonalSignature p WHERE p.signatureName LIKE %:keyword% AND p.status = :status AND p.signatureType = :signatureType ORDER BY p.createTime DESC")
+    Page<PersonalSignature> searchByKeywordAndStatusAndType(@Param("keyword") String keyword, @Param("status") Integer status, @Param("signatureType") Integer signatureType, Pageable pageable);
+
+    /**
+     * 根据状态和签名类型分页查询
+     *
+     * @param status        状态
+     * @param signatureType 签名类型
+     * @param pageable      分页参数
+     * @return 签名分页列表
+     */
+    Page<PersonalSignature> findByStatusAndSignatureType(Integer status, Integer signatureType, Pageable pageable);
+
     /**
      * 查询最近使用的签名（按更新时间排序）
      *

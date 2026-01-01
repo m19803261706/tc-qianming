@@ -148,8 +148,9 @@ public class SignatureServiceImpl implements SignatureService {
 
     @Override
     public PageResponse<SignatureResponse> queryPage(SignatureQueryRequest request) {
-        log.debug("分页查询签名: userId={}, page={}, size={}",
-                request.getUserId(), request.getPage(), request.getSize());
+        log.debug("分页查询签名: userId={}, keyword={}, signatureType={}, status={}, page={}, size={}",
+                request.getUserId(), request.getKeyword(), request.getSignatureType(),
+                request.getStatus(), request.getPage(), request.getSize());
 
         // 构建分页参数（页码从1转换为0）
         Pageable pageable = PageRequest.of(
@@ -160,14 +161,44 @@ public class SignatureServiceImpl implements SignatureService {
 
         Page<PersonalSignature> page;
 
-        // 根据查询条件选择查询方法
-        if (request.getUserId() != null) {
-            if (request.getStatus() != null) {
-                page = signatureRepository.findByUserIdAndStatus(request.getUserId(), request.getStatus(), pageable);
+        // 提取查询参数
+        String keyword = request.getKeyword();
+        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+        Integer status = request.getStatus();
+        Integer signatureType = request.getSignatureType();
+        Long userId = request.getUserId();
+
+        // 根据查询条件选择合适的查询方法
+        if (userId != null) {
+            // 用户级查询（如果有用户ID，优先使用用户级查询）
+            if (status != null) {
+                page = signatureRepository.findByUserIdAndStatus(userId, status, pageable);
             } else {
-                page = signatureRepository.findByUserId(request.getUserId(), pageable);
+                page = signatureRepository.findByUserId(userId, pageable);
             }
+        } else if (hasKeyword) {
+            // 全局关键词搜索
+            keyword = keyword.trim();
+            if (status != null && signatureType != null) {
+                page = signatureRepository.searchByKeywordAndStatusAndType(keyword, status, signatureType, pageable);
+            } else if (status != null) {
+                page = signatureRepository.searchByKeywordAndStatus(keyword, status, pageable);
+            } else if (signatureType != null) {
+                page = signatureRepository.searchByKeywordAndType(keyword, signatureType, pageable);
+            } else {
+                page = signatureRepository.searchByKeyword(keyword, pageable);
+            }
+        } else if (status != null && signatureType != null) {
+            // 状态和类型组合筛选
+            page = signatureRepository.findByStatusAndSignatureType(status, signatureType, pageable);
+        } else if (status != null) {
+            // 仅状态筛选
+            page = signatureRepository.findByStatus(status, pageable);
+        } else if (signatureType != null) {
+            // 仅类型筛选
+            page = signatureRepository.findBySignatureType(signatureType, pageable);
         } else {
+            // 无条件查询所有
             page = signatureRepository.findAll(pageable);
         }
 

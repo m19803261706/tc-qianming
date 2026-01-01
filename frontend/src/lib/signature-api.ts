@@ -9,29 +9,32 @@ import { get, post, del, put, type ApiResponse, type PageResponse } from './api'
  */
 export interface Signature {
   id: number;
+  /** 用户ID */
   userId: number;
+  /** 签名名称 */
   signatureName: string;
+  /** 签名图片路径 */
   signatureImage: string;
-  signatureImageUrl: string;
+  /** 签名图片URL */
+  signatureImageUrl?: string;
+  /** 签名类型（1-上传图片 2-手写签名 3-字体生成） */
   signatureType: number;
-  signatureTypeDesc: string;
+  /** 签名类型描述 */
+  signatureTypeDesc?: string;
+  /** 字体名称 */
   fontName?: string;
+  /** 字体颜色 */
   fontColor?: string;
+  /** 签名文本内容 */
   textContent?: string;
+  /** 是否默认签名（0-否 1-是） */
   isDefault: number;
+  /** 状态（0-禁用 1-启用） */
   status: number;
+  /** 创建时间 */
   createTime: string;
+  /** 更新时间 */
   updateTime: string;
-}
-
-/**
- * 字体信息
- */
-export interface FontInfo {
-  fontName: string;
-  displayName: string;
-  available: boolean;
-  sample?: string;
 }
 
 /**
@@ -39,21 +42,11 @@ export interface FontInfo {
  */
 export interface SignatureQueryParams {
   userId?: number;
+  keyword?: string;
   signatureType?: number;
   status?: number;
   page?: number;
   size?: number;
-}
-
-/**
- * 手写签名请求
- */
-export interface HandwriteSignatureRequest {
-  userId: number;
-  imageData: string; // Base64 图片数据
-  name?: string;
-  setDefault?: boolean;
-  createBy?: string;
 }
 
 /**
@@ -64,10 +57,25 @@ export interface FontSignatureRequest {
   text: string;
   fontName: string;
   fontColor?: string;
-  fontSize?: number;
   signatureName?: string;
-  setDefault?: boolean;
-  createBy?: string;
+}
+
+/**
+ * 手写签名请求
+ */
+export interface HandwriteSignatureRequest {
+  userId: number;
+  imageData: string;
+  signatureName?: string;
+}
+
+/**
+ * 可用字体信息
+ */
+export interface FontInfo {
+  fontName: string;
+  displayName: string;
+  preview?: string;
 }
 
 // ==================== API 方法 ====================
@@ -89,7 +97,7 @@ export async function getSignaturesByUserId(userId: number): Promise<ApiResponse
 /**
  * 获取用户的启用签名
  */
-export async function getEnabledSignaturesByUserId(userId: number): Promise<ApiResponse<Signature[]>> {
+export async function getEnabledSignatures(userId: number): Promise<ApiResponse<Signature[]>> {
   return get(`/api/signatures/user/${userId}/enabled`);
 }
 
@@ -155,9 +163,9 @@ export async function getAvailableFonts(): Promise<ApiResponse<FontInfo[]>> {
  * 签名类型
  */
 export const SIGNATURE_TYPES = [
-  { value: 1, label: '上传图片' },
-  { value: 2, label: '手写签名' },
-  { value: 3, label: '字体生成' },
+  { value: 1, label: '上传图片', color: 'blue' },
+  { value: 2, label: '手写签名', color: 'green' },
+  { value: 3, label: '字体生成', color: 'purple' },
 ] as const;
 
 /**
@@ -166,14 +174,4 @@ export const SIGNATURE_TYPES = [
 export const SIGNATURE_STATUS = [
   { value: 0, label: '禁用', color: 'gray' },
   { value: 1, label: '启用', color: 'green' },
-] as const;
-
-/**
- * 默认字体颜色选项
- */
-export const SIGNATURE_COLORS = [
-  { name: '黑色', value: '#000000' },
-  { name: '蓝色', value: '#1E40AF' },
-  { name: '深蓝', value: '#1E3A8A' },
-  { name: '红色', value: '#DC2626' },
 ] as const;

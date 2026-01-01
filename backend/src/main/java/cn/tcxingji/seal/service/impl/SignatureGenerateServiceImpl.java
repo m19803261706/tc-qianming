@@ -10,9 +10,12 @@ import cn.tcxingji.seal.entity.PersonalSignature;
 import cn.tcxingji.seal.exception.BusinessException;
 import cn.tcxingji.seal.service.SignatureGenerateService;
 import cn.tcxingji.seal.service.SignatureService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -22,6 +25,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,6 +33,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 签名生成服务实现类
@@ -54,17 +59,68 @@ public class SignatureGenerateServiceImpl implements SignatureGenerateService {
     private String baseUrl;
 
     /**
-     * 推荐用于签名的中文字体列表
+     * 已加载的自定义字体缓存
      */
-    private static final List<FontConfig> SIGNATURE_FONTS = List.of(
-            new FontConfig("华文行楷", "华文行楷", "STXingkai", true, "流畅的行楷风格，适合正式签名"),
-            new FontConfig("华文新魏", "华文新魏", "STXinwei", true, "端庄的魏碑风格，适合庄重场合"),
-            new FontConfig("楷体", "楷体", "KaiTi", true, "规范的楷书风格，清晰易读"),
-            new FontConfig("华文隶书", "华文隶书", "STLiti", false, "古朴的隶书风格"),
-            new FontConfig("华文琥珀", "华文琥珀", "STHupo", false, "饱满圆润的风格"),
-            new FontConfig("方正舒体", "方正舒体", "FZShuTi", false, "舒展流畅的书法风格"),
-            new FontConfig("宋体", "宋体", "SimSun", false, "标准宋体，正式文档常用")
+    private final Map<String, Font> loadedFonts = new ConcurrentHashMap<>();
+
+    /**
+     * 项目内置的签名字体配置
+     * fontFileName: 字体文件名（放在 resources/fonts/ 目录下）
+     */
+    private static final List<FontConfig> BUNDLED_FONTS = List.of(
+            new FontConfig("霞鹜文楷", "霞鹜文楷", "LXGW WenKai", true,
+                    "优雅的楷书风格，适合正式签名", "LXGWWenKai-Regular.ttf"),
+            new FontConfig("霞鹜文楷轻体", "文楷轻体", "LXGW WenKai Light", true,
+                    "纤细优美的楷书风格，清雅脱俗", "LXGWWenKai-Light.ttf"),
+            new FontConfig("演示悠然小楷", "悠然小楷", "SlideYouran", true,
+                    "清新的小楷风格，如青竹新生", "SlideYouran.ttf")
     );
+
+    /**
+     * 系统备选字体（当内置字体加载失败时使用）
+     */
+    private static final List<FontConfig> SYSTEM_FONTS = List.of(
+            new FontConfig("华文行楷", "华文行楷", "STXingkai", false, "流畅的行楷风格", null),
+            new FontConfig("楷体", "楷体", "KaiTi", false, "规范的楷书风格", null),
+            new FontConfig("宋体", "宋体", "SimSun", false, "标准宋体", null)
+    );
+
+    /**
+     * 初始化：加载内置字体文件
+     */
+    @PostConstruct
+    public void initFonts() {
+        log.info("开始加载内置签名字体...");
+
+        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+
+        for (FontConfig fontConfig : BUNDLED_FONTS) {
+            if (fontConfig.fontFileName == null) {
+                continue;
+            }
+
+            try {
+                String resourcePath = "classpath:fonts/" + fontConfig.fontFileName;
+                Resource resource = resolver.getResource(resourcePath);
+
+                if (resource.exists()) {
+                    try (InputStream is = resource.getInputStream()) {
+                        Font font = Font.createFont(Font.TRUETYPE_FONT, is);
+                        ge.registerFont(font);
+                        loadedFonts.put(fontConfig.fontName, font);
+                        log.info("成功加载字体: {} ({})", fontConfig.displayName, fontConfig.fontFileName);
+                    }
+                } else {
+                    log.warn("字体文件不存在: {}", resourcePath);
+                }
+            } catch (Exception e) {
+                log.error("加载字体失败: {} - {}", fontConfig.fontFileName, e.getMessage());
+            }
+        }
+
+        log.info("字体加载完成，共加载 {} 个内置字体", loadedFonts.size());
+    }
 
     @Override
     public SignatureResponse saveHandwriteSignature(HandwriteSignatureRequest request) {
@@ -158,19 +214,11 @@ public class SignatureGenerateServiceImpl implements SignatureGenerateService {
     public List<FontInfoResponse> getAvailableFonts() {
         log.debug("获取可用字体列表");
 
-        // 获取系统已安装的字体
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        Set<String> installedFonts = new HashSet<>(Arrays.asList(ge.getAvailableFontFamilyNames()));
-
         List<FontInfoResponse> result = new ArrayList<>();
 
-        for (FontConfig fontConfig : SIGNATURE_FONTS) {
-            // 检查字体是否已安装（检查多个可能的名称）
-            boolean installed = installedFonts.contains(fontConfig.fontName) ||
-                    installedFonts.contains(fontConfig.displayName) ||
-                    installedFonts.contains(fontConfig.englishName);
-
-            if (installed) {
+        // 1. 添加已成功加载的内置字体
+        for (FontConfig fontConfig : BUNDLED_FONTS) {
+            if (loadedFonts.containsKey(fontConfig.fontName)) {
                 result.add(FontInfoResponse.builder()
                         .fontName(fontConfig.fontName)
                         .displayName(fontConfig.displayName)
@@ -181,9 +229,31 @@ public class SignatureGenerateServiceImpl implements SignatureGenerateService {
             }
         }
 
-        // 如果没有找到推荐字体，添加系统默认字体
+        // 2. 如果内置字体不足，添加系统已安装的备选字体
+        if (result.size() < 2) {
+            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            Set<String> installedFonts = new HashSet<>(Arrays.asList(ge.getAvailableFontFamilyNames()));
+
+            for (FontConfig fontConfig : SYSTEM_FONTS) {
+                boolean installed = installedFonts.contains(fontConfig.fontName) ||
+                        installedFonts.contains(fontConfig.displayName) ||
+                        installedFonts.contains(fontConfig.englishName);
+
+                if (installed) {
+                    result.add(FontInfoResponse.builder()
+                            .fontName(fontConfig.fontName)
+                            .displayName(fontConfig.displayName)
+                            .fontFamily(fontConfig.englishName)
+                            .recommended(fontConfig.recommended)
+                            .description(fontConfig.description)
+                            .build());
+                }
+            }
+        }
+
+        // 3. 如果仍然没有字体，添加系统默认字体
         if (result.isEmpty()) {
-            log.warn("未找到推荐的中文书法字体，添加系统默认字体");
+            log.warn("未找到可用字体，添加系统默认宋体");
             result.add(FontInfoResponse.builder()
                     .fontName("宋体")
                     .displayName("宋体")
@@ -262,12 +332,30 @@ public class SignatureGenerateServiceImpl implements SignatureGenerateService {
      * @return Font 对象
      */
     private Font getFont(String fontName, int fontSize) {
+        // 1. 优先使用已加载的内置字体
+        Font loadedFont = loadedFonts.get(fontName);
+        if (loadedFont != null) {
+            log.debug("使用内置字体: {}", fontName);
+            return loadedFont.deriveFont((float) fontSize);
+        }
+
+        // 2. 尝试查找内置字体配置并使用英文名
+        for (FontConfig fc : BUNDLED_FONTS) {
+            if (fc.fontName.equals(fontName) || fc.displayName.equals(fontName)) {
+                Font cached = loadedFonts.get(fc.fontName);
+                if (cached != null) {
+                    return cached.deriveFont((float) fontSize);
+                }
+            }
+        }
+
+        // 3. 尝试系统字体
         Font font = new Font(fontName, Font.PLAIN, fontSize);
 
         // 检查字体是否可用
         if (!font.getFamily().equals(fontName) && !font.getName().equals(fontName)) {
             // 尝试使用备选字体名称
-            for (FontConfig fc : SIGNATURE_FONTS) {
+            for (FontConfig fc : SYSTEM_FONTS) {
                 if (fc.fontName.equals(fontName) || fc.displayName.equals(fontName)) {
                     font = new Font(fc.englishName, Font.PLAIN, fontSize);
                     break;
@@ -275,7 +363,7 @@ public class SignatureGenerateServiceImpl implements SignatureGenerateService {
             }
         }
 
-        log.debug("使用字体: {} (实际: {})", fontName, font.getFamily());
+        log.debug("使用系统字体: {} (实际: {})", fontName, font.getFamily());
         return font;
     }
 
@@ -382,12 +470,28 @@ public class SignatureGenerateServiceImpl implements SignatureGenerateService {
 
     /**
      * 字体配置
+     *
+     * @param fontName     字体名称（用于查找和存储）
+     * @param displayName  显示名称（用于前端展示）
+     * @param englishName  英文名称（系统字体名）
+     * @param recommended  是否推荐
+     * @param description  字体描述
+     * @param fontFileName 字体文件名（内置字体专用，系统字体为 null）
      */
     private record FontConfig(
             String fontName,
             String displayName,
             String englishName,
             boolean recommended,
-            String description
-    ) {}
+            String description,
+            String fontFileName
+    ) {
+        /**
+         * 系统字体构造方法（无字体文件）
+         */
+        FontConfig(String fontName, String displayName, String englishName,
+                   boolean recommended, String description) {
+            this(fontName, displayName, englishName, recommended, description, null);
+        }
+    }
 }
