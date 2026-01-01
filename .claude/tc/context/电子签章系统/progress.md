@@ -3,7 +3,7 @@
 ## Epic 进度
 
 🎯 Epic Issue: #1 - 太初星集电子签章系统
-进度: ◉◉◉◉○○○○○○○○○○○○○○○ 4/19 (21%)
+进度: ◉◉◉◉◉○○○○○○○○○○○○○○ 5/19 (26%)
 
 ## Phase 1: 数据库设计 ✅ 已完成
 
@@ -78,14 +78,42 @@
   - isFontGenerated() 判断是否为字体生成签名
   - getSignatureTypeDesc() 获取签名类型描述
 
-## 进行中任务
+## Phase 2: 后端开发 🔄 进行中
 
-无
+### #6 - 印章管理 CRUD API ✅
+- **完成时间**: 2026-01-01
+- **提交**: `8ca803e`
+- **类型**: backend
+- **变更**:
+  - 新建:
+    - `backend/src/main/java/cn/tcxingji/seal/dto/request/SealCreateRequest.java`
+    - `backend/src/main/java/cn/tcxingji/seal/dto/request/SealUpdateRequest.java`
+    - `backend/src/main/java/cn/tcxingji/seal/dto/request/SealQueryRequest.java`
+    - `backend/src/main/java/cn/tcxingji/seal/dto/response/SealResponse.java`
+    - `backend/src/main/java/cn/tcxingji/seal/dto/response/ApiResponse.java`
+    - `backend/src/main/java/cn/tcxingji/seal/dto/response/PageResponse.java`
+    - `backend/src/main/java/cn/tcxingji/seal/service/SealService.java`
+    - `backend/src/main/java/cn/tcxingji/seal/service/impl/SealServiceImpl.java`
+    - `backend/src/main/java/cn/tcxingji/seal/controller/SealController.java`
+    - `backend/src/main/java/cn/tcxingji/seal/exception/BusinessException.java`
+    - `backend/src/main/java/cn/tcxingji/seal/exception/GlobalExceptionHandler.java`
+  - 修改:
+    - `backend/pom.xml` - 添加 Lombok 注解处理器配置
+- **API 接口**:
+  | 方法 | 路径 | 描述 |
+  |------|------|------|
+  | GET | /api/seals | 分页查询印章列表 |
+  | GET | /api/seals/{id} | 获取印章详情 |
+  | POST | /api/seals | 创建印章 |
+  | PUT | /api/seals/{id} | 更新印章 |
+  | DELETE | /api/seals/{id} | 删除印章 |
+  | PUT | /api/seals/{id}/status | 启用/禁用印章 |
+  | GET | /api/seals/owner/{ownerId} | 获取所有者印章列表 |
+  | GET | /api/seals/owner/{ownerId}/enabled | 获取所有者启用印章 |
 
 ## 待执行任务
 
-### Phase 2: 后端开发 (8 个)
-- #6 印章管理 CRUD API (tc-ready) ⭕
+### Phase 2: 后端开发 (7 个剩余)
 - #7 印章图片上传接口 (tc-ready) ⭕
 - #8 印章自动生成服务 (tc-ready) ⭕
 - #9 PDF 上传与预览接口 (tc-ready) ⭕
@@ -108,3 +136,9 @@
 | seal_record | 签章记录 | V2 |
 | contract_file | 合同文件 | V3 |
 | personal_signature | 个人签名 | V4 |
+
+## API 接口汇总
+
+| 模块 | 路径前缀 | 状态 |
+|------|----------|------|
+| 印章管理 | /api/seals | ✅ 已完成 |

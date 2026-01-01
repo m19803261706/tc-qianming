@@ -10,8 +10,8 @@
   },
   "progress": {
     "total": 19,
-    "completed": 4,
-    "percent": 21
+    "completed": 5,
+    "percent": 26
   },
   "phases": [
     {
@@ -24,7 +24,7 @@
       "name": "Phase 2: 后端开发",
       "issues": [6, 7, 8, 9, 10, 11, 12, 13],
       "status": "in_progress",
-      "completed": 0
+      "completed": 1
     },
     {
       "name": "Phase 3: 前端开发",
@@ -44,7 +44,7 @@
     {"number": 3, "title": "签章记录表设计", "type": "database", "status": "tc-done", "phase": 1, "completed_at": "2026-01-01", "commit": "60be46e"},
     {"number": 4, "title": "合同文件表设计", "type": "database", "status": "tc-done", "phase": 1, "completed_at": "2026-01-01", "commit": "8466e72"},
     {"number": 5, "title": "个人签名表设计", "type": "database", "status": "tc-done", "phase": 1, "completed_at": "2026-01-01", "commit": "b6aa0b1"},
-    {"number": 6, "title": "印章管理 CRUD API", "type": "backend", "status": "tc-ready", "phase": 2, "depends_on": [2]},
+    {"number": 6, "title": "印章管理 CRUD API", "type": "backend", "status": "tc-done", "phase": 2, "depends_on": [2], "completed_at": "2026-01-01", "commit": "8ca803e"},
     {"number": 7, "title": "印章图片上传接口", "type": "backend", "status": "tc-ready", "phase": 2, "depends_on": [2]},
     {"number": 8, "title": "印章自动生成服务", "type": "backend", "status": "tc-ready", "phase": 2, "depends_on": [2]},
     {"number": 9, "title": "PDF 上传与预览接口", "type": "backend", "status": "tc-ready", "phase": 2, "depends_on": [4]},
@@ -62,9 +62,9 @@
   ],
   "execution_order": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
   "last_completed": {
-    "issue": 5,
-    "title": "个人签名表设计",
-    "commit": "b6aa0b1",
+    "issue": 6,
+    "title": "印章管理 CRUD API",
+    "commit": "8ca803e",
     "time": "2026-01-01"
   }
 }
