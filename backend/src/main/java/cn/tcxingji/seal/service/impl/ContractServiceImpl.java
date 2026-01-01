@@ -75,22 +75,31 @@ public class ContractServiceImpl implements ContractService {
         // 1. 验证文件
         validateFile(file);
 
-        // 2. 计算文件哈希
-        String fileHash = calculateHash(file);
+        // 2. 获取文件字节数组（只读取一次，避免流被消耗后无法重复读取）
+        byte[] fileBytes;
+        try {
+            fileBytes = file.getBytes();
+        } catch (IOException e) {
+            log.error("读取文件内容失败", e);
+            throw new BusinessException("读取文件内容失败，请重试");
+        }
 
-        // 3. 检查文件是否已存在
+        // 3. 计算文件哈希
+        String fileHash = calculateHash(fileBytes);
+
+        // 4. 检查文件是否已存在
         if (contractFileRepository.existsByFileHash(fileHash)) {
             throw new BusinessException("该文件已上传过，请勿重复上传");
         }
 
-        // 4. 保存文件
+        // 5. 保存文件
         String originalName = file.getOriginalFilename();
-        Path savedPath = saveFile(file);
+        Path savedPath = saveFile(fileBytes);
 
-        // 5. 读取 PDF 页数
+        // 6. 读取 PDF 页数
         int pageCount = getPdfPageCount(savedPath);
 
-        // 6. 创建数据库记录
+        // 7. 创建数据库记录
         ContractFile contractFile = ContractFile.builder()
                 .fileName(originalName)
                 .originalPath(savedPath.toString())
@@ -288,22 +297,23 @@ public class ContractServiceImpl implements ContractService {
     }
 
     /**
-     * 计算文件 SHA-256 哈希值
+     * 计算字节数组的 SHA-256 哈希值
      */
-    private String calculateHash(MultipartFile file) {
+    private String calculateHash(byte[] fileBytes) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(file.getBytes());
+            byte[] hash = digest.digest(fileBytes);
             return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException | IOException e) {
+        } catch (NoSuchAlgorithmException e) {
             throw new BusinessException("计算文件哈希失败: " + e.getMessage());
         }
     }
 
     /**
      * 保存文件到磁盘
+     * 注意：使用 file.getBytes() 写入文件，因为流可能在 calculateHash() 中已被读取
      */
-    private Path saveFile(MultipartFile file) {
+    private Path saveFile(byte[] fileBytes) {
         String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM"));
         String fileName = String.format("contract_%s_%s.pdf",
                 LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")),
@@ -317,7 +327,7 @@ public class ContractServiceImpl implements ContractService {
             }
 
             Path targetPath = targetDir.resolve(fileName);
-            file.transferTo(targetPath.toFile());
+            Files.write(targetPath, fileBytes);
             log.debug("文件保存成功: {}", targetPath);
             return targetPath;
 
