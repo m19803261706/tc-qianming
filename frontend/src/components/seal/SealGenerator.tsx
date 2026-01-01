@@ -28,7 +28,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-// API 类型
+// API 类型和工具函数
 import {
   type SealTemplate,
   type SealGenerateRequest,
@@ -36,6 +36,7 @@ import {
   generateSeal,
   getSealTemplates,
 } from '@/lib/seal-api';
+import { getFullFileUrl } from '@/lib/api';
 
 interface SealGeneratorProps {
   /** 是否显示弹窗 */
@@ -144,7 +145,8 @@ export default function SealGenerator({
 
       const response = await generateSeal(request);
       if (response.success) {
-        setPreviewUrl(response.data.fileUrl);
+        // 使用完整的后端 URL 来显示图片
+        setPreviewUrl(getFullFileUrl(response.data.fileUrl));
         setPreviewResult(response.data);
       } else {
         alert(response.message || '生成失败');

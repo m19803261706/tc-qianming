@@ -150,3 +150,23 @@ export async function uploadFile<T>(path: string, file: File, fieldName = 'file'
     success: result.code === 200,
   };
 }
+
+/**
+ * 获取完整的文件 URL
+ * 将后端返回的相对路径转换为完整的 HTTP URL
+ *
+ * @param fileUrl 后端返回的文件路径 (如: /uploads/seals/2026/01/xxx.png)
+ * @returns 完整的 HTTP URL (如: http://localhost:8099/uploads/seals/2026/01/xxx.png)
+ */
+export function getFullFileUrl(fileUrl: string | null | undefined): string {
+  if (!fileUrl) {
+    return '';
+  }
+  // 如果已经是完整 URL，直接返回
+  if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+    return fileUrl;
+  }
+  // 确保路径以 / 开头
+  const normalizedPath = fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+}
