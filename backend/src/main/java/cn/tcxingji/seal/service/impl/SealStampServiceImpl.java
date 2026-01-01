@@ -270,7 +270,11 @@ public class SealStampServiceImpl implements SealStampService {
      */
     private Path doStamp(ContractFile contract, SealInfo sealInfo,
                           List<SealPositionRequest> positions) {
-        Path sourcePath = Paths.get(contract.getOriginalPath());
+        // 优先使用已签章的 PDF，支持多次签章累加
+        String pathToUse = (contract.getSignedPath() != null && !contract.getSignedPath().isEmpty())
+                ? contract.getSignedPath()
+                : contract.getOriginalPath();
+        Path sourcePath = Paths.get(pathToUse);
         if (!Files.exists(sourcePath)) {
             throw new BusinessException("合同文件不存在");
         }
