@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Modal from '@/components/ui/Modal';
+import SealGenerator from './SealGenerator';
 import {
   type Seal,
   type SealCreateRequest,
   type SealUpdateRequest,
+  type FileUploadResponse,
   SEAL_TYPES,
   OWNER_TYPES,
   uploadSealImage,
@@ -33,6 +35,7 @@ export default function SealEditModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showGenerator, setShowGenerator] = useState(false);
   const [formData, setFormData] = useState({
     sealName: '',
     sealType: 1,
@@ -108,6 +111,15 @@ export default function SealEditModal({
     } finally {
       setUploading(false);
     }
+  };
+
+  // 处理自动生成的印章
+  const handleGeneratedSeal = (result: FileUploadResponse) => {
+    setFormData(prev => ({
+      ...prev,
+      sealImage: result.filePath,
+      sealImageUrl: result.fileUrl,
+    }));
   };
 
   // 提交表单
@@ -261,7 +273,7 @@ export default function SealEditModal({
             </div>
 
             {/* 上传按钮 */}
-            <div className="flex-1">
+            <div className="flex-1 space-y-3">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -269,16 +281,30 @@ export default function SealEditModal({
                 onChange={handleFileChange}
                 className="hidden"
               />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
-              >
-                {uploading ? '上传中...' : '选择图片'}
-              </button>
-              <p className="text-xs text-gray-500 mt-2">
-                支持 PNG、JPG 格式，最大 5MB
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
+                >
+                  {uploading ? '上传中...' : '上传图片'}
+                </button>
+                {!isEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setShowGenerator(true)}
+                    className="px-4 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors flex items-center gap-1.5"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    </svg>
+                    自动生成
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-gray-500">
+                支持 PNG、JPG 格式，最大 5MB；或使用自动生成功能
               </p>
             </div>
           </div>
@@ -317,6 +343,13 @@ export default function SealEditModal({
           </button>
         </div>
       </form>
+
+      {/* 印章自动生成弹窗 */}
+      <SealGenerator
+        isOpen={showGenerator}
+        onClose={() => setShowGenerator(false)}
+        onSuccess={handleGeneratedSeal}
+      />
     </Modal>
   );
 }

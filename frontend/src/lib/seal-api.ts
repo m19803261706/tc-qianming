@@ -77,10 +77,9 @@ export interface FileUploadResponse {
 export interface SealTemplate {
   code: string;
   name: string;
-  description: string;
   baseSize: number;
-  hasBorder: boolean;
   hasStar: boolean;
+  fontName: string;
 }
 
 /**
