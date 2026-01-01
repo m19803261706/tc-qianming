@@ -88,7 +88,8 @@ export default function SealPositionPicker({
 
   // 处理点击添加印章
   const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!selectedSeal || draggingId) return;
+    // 如果正在拖拽或缩放，不添加新印章
+    if (!selectedSeal || draggingId || resizingId) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left - defaultSealSize / 2;
@@ -109,7 +110,7 @@ export default function SealPositionPicker({
     };
 
     onAddPlacement(placement);
-  }, [selectedSeal, draggingId, pageNumber, pageWidth, pageHeight, defaultSealSize, onAddPlacement]);
+  }, [selectedSeal, draggingId, resizingId, pageNumber, pageWidth, pageHeight, defaultSealSize, onAddPlacement]);
 
   // 开始拖拽
   const handleDragStart = useCallback((e: React.MouseEvent, placement: SealPlacement) => {
