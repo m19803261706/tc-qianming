@@ -9,6 +9,7 @@
  * - 顶部导航栏（包含移动端菜单触发器）
  */
 
+import React from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { Separator } from '@/components/ui/separator';
@@ -89,14 +90,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <Breadcrumb>
             <BreadcrumbList>
               {breadcrumbs.map((crumb, index) => (
-                <BreadcrumbItem key={crumb.href}>
+                <React.Fragment key={crumb.href}>
                   {index > 0 && <BreadcrumbSeparator />}
-                  {crumb.isLast ? (
-                    <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                  ) : (
-                    <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
-                  )}
-                </BreadcrumbItem>
+                  <BreadcrumbItem>
+                    {crumb.isLast ? (
+                      <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                    ) : (
+                      <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
+                    )}
+                  </BreadcrumbItem>
+                </React.Fragment>
               ))}
             </BreadcrumbList>
           </Breadcrumb>
