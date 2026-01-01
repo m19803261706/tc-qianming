@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import ContractUploadModal from '@/components/contract/ContractUploadModal';
@@ -37,11 +37,35 @@ export default function ContractsPage() {
     keyword: '',
   });
 
+  // 搜索关键词（用于输入框，独立于 filters 以实现防抖）
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // 弹窗状态
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingContract, setDeletingContract] = useState<Contract | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // 防抖搜索：输入停止 300ms 后触发搜索
+  useEffect(() => {
+    // 清除之前的定时器
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // 设置新的定时器
+    debounceTimerRef.current = setTimeout(() => {
+      setFilters(prev => ({ ...prev, keyword: searchKeyword, page: 1 }));
+    }, 300);
+
+    // 清理函数
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchKeyword]);
 
   // 加载合同列表
   const loadContracts = useCallback(async () => {
@@ -169,8 +193,8 @@ export default function ContractsPage() {
               <input
                 type="text"
                 placeholder="搜索合同名称..."
-                value={filters.keyword || ''}
-                onChange={(e) => setFilters(prev => ({ ...prev, keyword: e.target.value, page: 1 }))}
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
                 className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
