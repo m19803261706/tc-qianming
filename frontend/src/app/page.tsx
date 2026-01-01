@@ -1,138 +1,145 @@
 import Link from 'next/link';
+import { Stamp, FileText, PenTool, History, TrendingUp, Shield, Clock } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 /**
- * 太初星集电子签章系统 - 首页
+ * 太初星集电子签章系统 - 首页仪表盘
+ *
+ * 显示系统概览、快速入口和统计信息
  */
 export default function Home() {
-  const features = [
+  // 功能快捷入口
+  const quickActions = [
     {
       title: '印章管理',
-      description: '管理企业印章、财务章、法人章等各类印章',
+      description: '管理企业印章、财务章、法人章',
       href: '/seals',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-        </svg>
-      ),
+      icon: Stamp,
+      color: 'bg-blue-500',
     },
     {
       title: '合同管理',
-      description: '上传、预览和管理待签章的合同文件',
+      description: '上传、预览待签章合同文件',
       href: '/contracts',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      ),
+      icon: FileText,
+      color: 'bg-green-500',
     },
     {
       title: '电子签名',
-      description: '创建和管理个人手写签名或字体签名',
+      description: '创建和管理个人签名',
       href: '/signatures',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-        </svg>
-      ),
+      icon: PenTool,
+      color: 'bg-purple-500',
     },
     {
       title: '签章记录',
-      description: '查看所有签章操作的历史记录和审计日志',
+      description: '查看签章历史和审计日志',
       href: '/records',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
+      icon: History,
+      color: 'bg-orange-500',
     },
   ];
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* 导航栏 */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <span className="text-xl font-bold text-gray-900">太初星集</span>
-            </div>
-            <div className="hidden sm:flex items-center gap-6">
-              <Link href="/seals" className="text-gray-600 hover:text-gray-900 transition-colors">
-                印章管理
-              </Link>
-              <Link href="/contracts" className="text-gray-600 hover:text-gray-900 transition-colors">
-                合同管理
-              </Link>
-              <Link href="/signatures" className="text-gray-600 hover:text-gray-900 transition-colors">
-                电子签名
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+  // 统计数据（后续可以从 API 获取）
+  const stats = [
+    { label: '印章总数', value: '-', icon: Stamp, trend: '+2 本月新增' },
+    { label: '待签合同', value: '-', icon: FileText, trend: '3 个待处理' },
+    { label: '本月签章', value: '-', icon: PenTool, trend: '同比 +15%' },
+  ];
 
-      {/* 主标题区 */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="text-center">
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
-            电子签章系统
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-10">
-            安全、高效、便捷的企业电子签章解决方案，让合同签署更简单
-          </p>
-          <div className="flex justify-center gap-4">
-            <Link
-              href="/seals"
-              className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-lg"
-            >
-              开始使用
-            </Link>
-            <Link
-              href="#features"
-              className="px-6 py-3 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors shadow"
-            >
-              了解更多
-            </Link>
-          </div>
+  return (
+    <div className="p-6 space-y-6">
+      {/* 欢迎区域 */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+        <h1 className="text-2xl font-bold mb-2">欢迎使用太初星集电子签章系统</h1>
+        <p className="text-blue-100 mb-4">
+          安全、高效、便捷的企业电子签章解决方案
+        </p>
+        <div className="flex gap-4">
+          <Link
+            href="/seals"
+            className="px-4 py-2 bg-white text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors"
+          >
+            开始使用
+          </Link>
+          <Link
+            href="/settings"
+            className="px-4 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-400 transition-colors"
+          >
+            系统设置
+          </Link>
         </div>
       </div>
 
-      {/* 功能卡片 */}
-      <div id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature) => (
-            <Link
-              key={feature.title}
-              href={feature.href}
-              className="group bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all hover:-translate-y-1"
-            >
-              <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                {feature.icon}
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-gray-600 text-sm">
-                {feature.description}
+      {/* 统计卡片 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {stats.map((stat) => (
+          <Card key={stat.label}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {stat.label}
+              </CardTitle>
+              <stat.icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3 text-green-500" />
+                {stat.trend}
               </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* 快捷入口 */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">快捷入口</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {quickActions.map((action) => (
+            <Link key={action.title} href={action.href}>
+              <Card className="hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer h-full">
+                <CardHeader className="pb-3">
+                  <div className={`w-10 h-10 ${action.color} rounded-lg flex items-center justify-center text-white mb-2`}>
+                    <action.icon className="h-5 w-5" />
+                  </div>
+                  <CardTitle className="text-base">{action.title}</CardTitle>
+                  <CardDescription>{action.description}</CardDescription>
+                </CardHeader>
+              </Card>
             </Link>
           ))}
         </div>
       </div>
 
-      {/* 页脚 */}
-      <footer className="bg-white border-t">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-500 text-sm">
-            <p>&copy; 2026 太初星集电子签章系统. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      {/* 系统信息 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              安全保障
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground space-y-2">
+            <p>• 采用国密算法保障签章安全</p>
+            <p>• 完整的操作审计日志</p>
+            <p>• 支持多级权限管理</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              最近动态
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            <p className="text-center py-4">暂无最近动态</p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

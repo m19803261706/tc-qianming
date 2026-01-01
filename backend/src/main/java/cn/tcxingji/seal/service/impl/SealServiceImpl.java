@@ -9,16 +9,19 @@ import cn.tcxingji.seal.entity.SealInfo;
 import cn.tcxingji.seal.exception.BusinessException;
 import cn.tcxingji.seal.repository.SealInfoRepository;
 import cn.tcxingji.seal.service.SealService;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -170,6 +173,9 @@ public class SealServiceImpl implements SealService {
 
     /**
      * 分页查询印章列表
+     * <p>
+     * 支持动态条件筛选：印章名称、印章类型、所有者、状态等
+     * </p>
      */
     @Override
     public PageResponse<SealResponse> queryPage(SealQueryRequest request) {
@@ -182,23 +188,55 @@ public class SealServiceImpl implements SealService {
                 Sort.by(Sort.Direction.DESC, "createTime")
         );
 
-        Page<SealInfo> page;
+        // 构建动态查询条件
+        Specification<SealInfo> spec = buildQuerySpecification(request);
 
-        // 根据条件查询
-        if (request.getOwnerId() != null && request.getOwnerType() != null) {
-            if (StringUtils.hasText(request.getSealName())) {
-                // 按所有者和名称模糊查询（需要自定义分页方法）
-                page = sealInfoRepository.findByOwnerIdAndOwnerType(
-                        request.getOwnerId(), request.getOwnerType(), pageable);
-            } else {
-                page = sealInfoRepository.findByOwnerIdAndOwnerType(
-                        request.getOwnerId(), request.getOwnerType(), pageable);
-            }
-        } else {
-            page = sealInfoRepository.findAll(pageable);
-        }
+        // 执行查询
+        Page<SealInfo> page = sealInfoRepository.findAll(spec, pageable);
 
         return PageResponse.from(page, SealResponse::fromEntity);
+    }
+
+    /**
+     * 构建动态查询条件
+     *
+     * @param request 查询请求
+     * @return JPA Specification
+     */
+    private Specification<SealInfo> buildQuerySpecification(SealQueryRequest request) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // 印章名称模糊查询
+            if (StringUtils.hasText(request.getSealName())) {
+                predicates.add(criteriaBuilder.like(
+                        root.get("sealName"),
+                        "%" + request.getSealName() + "%"
+                ));
+            }
+
+            // 印章类型精确查询
+            if (request.getSealType() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("sealType"), request.getSealType()));
+            }
+
+            // 所有者ID精确查询
+            if (request.getOwnerId() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("ownerId"), request.getOwnerId()));
+            }
+
+            // 所有者类型精确查询
+            if (request.getOwnerType() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("ownerType"), request.getOwnerType()));
+            }
+
+            // 状态精确查询
+            if (request.getStatus() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("status"), request.getStatus()));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
     }
 
     /**

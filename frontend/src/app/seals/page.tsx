@@ -23,9 +23,9 @@ export default function SealManagePage() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
 
-  // 筛选条件
+  // 筛选条件（后端分页从 0 开始）
   const [filters, setFilters] = useState<SealQueryParams>({
-    page: 1,
+    page: 0,
     size: 12,
     sealType: undefined,
     status: undefined,
@@ -116,99 +116,93 @@ export default function SealManagePage() {
     }
   };
 
-  // 筛选变化
+  // 筛选变化（重置到第一页，即 page=0）
   const handleFilterChange = (key: keyof SealQueryParams, value: number | undefined) => {
-    setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
+    setFilters(prev => ({ ...prev, [key]: value, page: 0 }));
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="p-6 space-y-4">
       {/* 页面头部 */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">印章管理</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                共 {total} 个印章
-              </p>
-            </div>
-            <button
-              onClick={handleAdd}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              新增印章
-            </button>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">印章管理</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            共 {total} 个印章
+          </p>
         </div>
+        <button
+          onClick={handleAdd}
+          className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-colors"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          新增印章
+        </button>
       </div>
 
       {/* 筛选栏 */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="bg-white rounded-lg shadow px-4 py-3">
-          <div className="flex flex-wrap items-center gap-4">
-            {/* 印章类型筛选 */}
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">类型:</label>
-              <select
-                value={filters.sealType || ''}
-                onChange={(e) => handleFilterChange('sealType', e.target.value ? Number(e.target.value) : undefined)}
-                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">全部类型</option>
-                {SEAL_TYPES.map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* 状态筛选 */}
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">状态:</label>
-              <select
-                value={filters.status ?? ''}
-                onChange={(e) => handleFilterChange('status', e.target.value ? Number(e.target.value) : undefined)}
-                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">全部状态</option>
-                {SEAL_STATUS.map(status => (
-                  <option key={status.value} value={status.value}>{status.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* 刷新按钮 */}
-            <button
-              onClick={loadSeals}
-              disabled={loading}
-              className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50"
+      <div className="bg-card rounded-lg border px-4 py-3">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* 印章类型筛选 */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted-foreground">类型:</label>
+            <select
+              value={filters.sealType || ''}
+              onChange={(e) => handleFilterChange('sealType', e.target.value ? Number(e.target.value) : undefined)}
+              className="px-3 py-1.5 border border-input rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-transparent bg-background"
             >
-              <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
+              <option value="">全部类型</option>
+              {SEAL_TYPES.map(type => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
           </div>
+
+          {/* 状态筛选 */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted-foreground">状态:</label>
+            <select
+              value={filters.status ?? ''}
+              onChange={(e) => handleFilterChange('status', e.target.value ? Number(e.target.value) : undefined)}
+              className="px-3 py-1.5 border border-input rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-transparent bg-background"
+            >
+              <option value="">全部状态</option>
+              {SEAL_STATUS.map(status => (
+                <option key={status.value} value={status.value}>{status.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 刷新按钮 */}
+          <button
+            onClick={loadSeals}
+            disabled={loading}
+            className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          >
+            <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
         </div>
       </div>
 
       {/* 印章列表 */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      <div>
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
           </div>
         ) : seals.length === 0 ? (
           <div className="text-center py-20">
-            <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="mx-auto h-16 w-16 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p className="mt-4 text-gray-500">暂无印章数据</p>
+            <p className="mt-4 text-muted-foreground">暂无印章数据</p>
             <button
               onClick={handleAdd}
-              className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
+              className="mt-4 text-primary hover:text-primary/80 font-medium"
             >
               创建第一个印章
             </button>
@@ -227,23 +221,23 @@ export default function SealManagePage() {
           </div>
         )}
 
-        {/* 分页（简化版） */}
+        {/* 分页（简化版，显示时 +1 转为 1-based） */}
         {!loading && seals.length > 0 && total > filters.size! && (
           <div className="flex justify-center gap-2 mt-8">
             <button
               onClick={() => setFilters(prev => ({ ...prev, page: prev.page! - 1 }))}
-              disabled={filters.page === 1}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={filters.page === 0}
+              className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-input rounded-lg hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
             >
               上一页
             </button>
-            <span className="px-4 py-2 text-sm text-gray-600">
-              第 {filters.page} / {Math.ceil(total / filters.size!)} 页
+            <span className="px-4 py-2 text-sm text-muted-foreground">
+              第 {filters.page! + 1} / {Math.ceil(total / filters.size!)} 页
             </span>
             <button
               onClick={() => setFilters(prev => ({ ...prev, page: prev.page! + 1 }))}
-              disabled={filters.page! >= Math.ceil(total / filters.size!)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={filters.page! + 1 >= Math.ceil(total / filters.size!)}
+              className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-input rounded-lg hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
             >
               下一页
             </button>

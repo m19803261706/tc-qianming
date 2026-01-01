@@ -45,6 +45,11 @@ public class SealResponse {
     private String sealImage;
 
     /**
+     * 印章图片访问 URL（用于前端显示）
+     */
+    private String sealImageUrl;
+
+    /**
      * 印章来源
      */
     private Integer sealSource;
@@ -110,6 +115,7 @@ public class SealResponse {
                 .sealType(sealInfo.getSealType())
                 .sealTypeDesc(getSealTypeDesc(sealInfo.getSealType()))
                 .sealImage(sealInfo.getSealImage())
+                .sealImageUrl(convertToImageUrl(sealInfo.getSealImage()))
                 .sealSource(sealInfo.getSealSource())
                 .sealSourceDesc(getSealSourceDesc(sealInfo.getSealSource()))
                 .ownerId(sealInfo.getOwnerId())
@@ -172,5 +178,29 @@ public class SealResponse {
             case SealInfo.Status.ENABLED -> "启用";
             default -> "未知";
         };
+    }
+
+    /**
+     * 将存储路径转换为访问 URL
+     * <p>
+     * 例如: ./uploads/seals/2026/01/xxx.png -> /uploads/seals/2026/01/xxx.png
+     * </p>
+     *
+     * @param imagePath 存储路径
+     * @return 访问 URL
+     */
+    private static String convertToImageUrl(String imagePath) {
+        if (imagePath == null || imagePath.isEmpty()) {
+            return null;
+        }
+        // 去除开头的 "./" 并确保以 "/" 开头
+        String url = imagePath;
+        if (url.startsWith("./")) {
+            url = url.substring(1);  // "./uploads/..." -> "/uploads/..."
+        }
+        if (!url.startsWith("/")) {
+            url = "/" + url;
+        }
+        return url;
     }
 }

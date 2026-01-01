@@ -4,6 +4,7 @@ import cn.tcxingji.seal.entity.SealInfo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,14 +15,14 @@ import java.util.List;
 /**
  * 印章信息 Repository 接口
  * <p>
- * 提供印章信息的数据访问层操作
+ * 提供印章信息的数据访问层操作，支持动态条件查询
  * </p>
  *
  * @author TC System
  * @since 2026-01-01
  */
 @Repository
-public interface SealInfoRepository extends JpaRepository<SealInfo, Long> {
+public interface SealInfoRepository extends JpaRepository<SealInfo, Long>, JpaSpecificationExecutor<SealInfo> {
 
     /**
      * 根据所有者ID和所有者类型查询印章列表

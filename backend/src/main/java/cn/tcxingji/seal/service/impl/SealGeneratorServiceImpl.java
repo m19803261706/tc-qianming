@@ -106,6 +106,16 @@ public class SealGeneratorServiceImpl implements SealGeneratorService {
      */
     private BufferedImage generateCircleSeal(String companyName, String centerText,
                                               int radius, Color color, SealTemplate template) {
+        /*
+         * 公章标准规范 (GB标准，以42mm直径为例):
+         * - 直径: 42mm (150px, 约3.57px/mm)
+         * - 边框宽度: 1.2mm (约4px)
+         * - 五角星直径: 14mm (约50px，半径25px，占总直径的1/3)
+         * - 五角星位置: 上移0.5mm
+         * - 环绕文字角度: 270° (自左而右环行)
+         * - 文字高度: 6.5-8mm
+         * - 文字与边框距离: 0.5-1mm
+         */
         int imageSize = radius * 2 + 40;  // 留边距
         BufferedImage image = createTransparentImage(imageSize, imageSize);
         Graphics2D g2d = createGraphics(image);
@@ -113,34 +123,48 @@ public class SealGeneratorServiceImpl implements SealGeneratorService {
         int centerX = imageSize / 2;
         int centerY = imageSize / 2;
 
+        // 按标准比例计算各部分尺寸
+        int borderWidth = Math.max(3, radius / 38);  // 边框宽度 (42mm时约1.2mm)
+        int starRadius = radius / 3;  // 五角星半径 (标准: 直径的1/3)
+        int textMargin = Math.max(3, radius / 50);  // 文字与边框的间距
+
         try {
             g2d.setColor(color);
 
             // 1. 绘制外圆边框
             if (template.isHasBorder()) {
-                g2d.setStroke(new BasicStroke(template.getBorderWidth() * 2));
+                g2d.setStroke(new BasicStroke(borderWidth));
                 g2d.draw(new Ellipse2D.Double(
-                        centerX - radius,
-                        centerY - radius,
-                        radius * 2,
-                        radius * 2
+                        centerX - radius + borderWidth / 2.0,
+                        centerY - radius + borderWidth / 2.0,
+                        radius * 2 - borderWidth,
+                        radius * 2 - borderWidth
                 ));
             }
 
-            // 2. 绘制五角星（稍微缩小一点，给中心文字留空间）
-            int starRadius = radius / 4;  // 五角星大小
+            // 2. 绘制五角星 (标准: 上移0.5mm，约2px)
             if (template.isHasStar()) {
-                drawStar(g2d, centerX, centerY - 5, starRadius);  // 星星略微上移
+                int starOffsetY = Math.max(1, radius / 75);  // 上移量
+                drawStar(g2d, centerX, centerY - starOffsetY, starRadius);
             }
 
-            // 3. 绘制环绕文字（沿上半圆分布）
-            drawCircleText(g2d, companyName, centerX, centerY, radius - 15, color);
+            // 3. 绘制环绕文字 (270°范围，自左而右)
+            // 计算字体大小（需与 drawCircleText 中的计算保持一致）
+            int baseFontSize = (int) (radius * 0.36);
+            int fontSize = companyName.length() > 14 ? baseFontSize - 4 :
+                           companyName.length() > 10 ? baseFontSize - 2 : baseFontSize;
+            fontSize = Math.max(16, Math.min(fontSize, 32));
 
-            // 4. 绘制中心文字（在五角星下方，保持适当间距）
+            // 文字环绕半径 = 边框内边缘 - 上间距 - 字体高度的一半
+            // 这样文字顶部（朝外）才能与边框保持适当间距
+            int topMargin = Math.max(5, radius / 20);  // 文字顶部与边框的间距 (约5%)
+            int textRadius = radius - borderWidth - topMargin - fontSize / 2;
+            drawCircleText(g2d, companyName, centerX, centerY, textRadius, color, radius);
+
+            // 4. 绘制中心文字（在五角星下方）
             if (centerText != null && !centerText.isEmpty()) {
-                // 中心文字位置 = 圆心Y + 五角星半径 + 间距
-                int centerTextY = centerY + starRadius + 25;
-                drawCenterText(g2d, centerText, centerX, centerTextY, color);
+                int centerTextY = centerY + starRadius + 8;  // 五角星下方
+                drawCenterText(g2d, centerText, centerX, centerTextY, color, radius);
             }
 
         } finally {
@@ -245,24 +269,30 @@ public class SealGeneratorServiceImpl implements SealGeneratorService {
     /**
      * 绘制环绕文字
      * <p>
-     * 标准公章文字布局：沿上半圆从左到右均匀分布，文字头朝外（向圆外方向）
+     * 按照国家标准：270°范围，自左而右环行，文字头朝外
      * </p>
      *
      * @param g2d         图形上下文
      * @param text        文字内容
      * @param centerX     圆心X坐标
      * @param centerY     圆心Y坐标
-     * @param radius      文字环绕半径
+     * @param textRadius  文字环绕半径
      * @param color       颜色
+     * @param sealRadius  印章半径（用于计算字体大小）
      */
     private void drawCircleText(Graphics2D g2d, String text, int centerX, int centerY,
-                                 int radius, Color color) {
+                                 int textRadius, Color color, int sealRadius) {
         if (text == null || text.isEmpty()) {
             return;
         }
 
-        // 根据文字数量动态调整字体大小
-        int fontSize = text.length() > 12 ? 22 : (text.length() > 8 ? 24 : 26);
+        // 根据印章大小和文字数量计算字体大小
+        // 标准: 文字高度约为印章直径的 15-19% (6.5-8mm / 42mm)
+        int baseFontSize = (int) (sealRadius * 0.36);  // 基础字号
+        int fontSize = text.length() > 14 ? baseFontSize - 4 :
+                       text.length() > 10 ? baseFontSize - 2 : baseFontSize;
+        fontSize = Math.max(16, Math.min(fontSize, 32));  // 限制范围
+
         Font font = new Font("宋体", Font.BOLD, fontSize);
         g2d.setFont(font);
         g2d.setColor(color);
@@ -271,38 +301,44 @@ public class SealGeneratorServiceImpl implements SealGeneratorService {
         char[] chars = text.toCharArray();
         int charCount = chars.length;
 
-        // 标准公章：文字沿上半圆分布，从左侧开始顺时针到右侧
-        // 角度从 210° 开始（左下方向上），到 -30°（330°，右下方向上）
-        // 这样文字会分布在上半圆，留出底部空间给中心文字
-        double startAngle = Math.toRadians(210);  // 起始角度 210°
-        double endAngle = Math.toRadians(-30);    // 结束角度 -30°（即 330°）
-        double totalAngle = startAngle - endAngle; // 总角度范围 240°
+        /*
+         * 标准公章文字布局：
+         * - 270°范围，自左而右环行
+         * - 起始角度: 225° (左下偏上)
+         * - 结束角度: -45° (右下偏上，即315°)
+         * - 文字方向: 每个字的顶部朝向圆外（可正常阅读）
+         */
+        double startAngle = Math.toRadians(225);   // 起始角度 225°
+        double endAngle = Math.toRadians(-45);     // 结束角度 -45° (315°)
+        double totalAngle = Math.toRadians(270);   // 总角度 270°
 
-        // 计算每个字符的角度间隔
+        // 计算每个字符的角度间隔（字符间均匀分布）
         double angleStep = totalAngle / (charCount + 1);
 
         for (int i = 0; i < charCount; i++) {
-            // 当前字符的角度位置
+            // 当前字符的角度位置（顺时针方向）
             double angle = startAngle - angleStep * (i + 1);
 
-            // 计算字符位置（圆上的点）
-            double x = centerX + radius * Math.cos(angle);
-            double y = centerY - radius * Math.sin(angle);
+            // 计算字符在圆上的位置
+            double x = centerX + textRadius * Math.cos(angle);
+            double y = centerY - textRadius * Math.sin(angle);
 
-            // 创建字符的变换
+            // 创建字符的变换矩阵
             AffineTransform transform = new AffineTransform();
             transform.translate(x, y);
 
-            // 旋转角度使文字头朝外（文字底部朝向圆心）
-            // 旋转角度 = -angle - 90°，使文字垂直于半径，头朝外
-            transform.rotate(-angle - Math.PI / 2);
+            // 旋转文字使其头朝外（顶部朝向圆外，底部朝向圆心）
+            // 在屏幕坐标系中，文字默认顶部朝上（-Y方向）
+            // 需要旋转使顶部朝向圆外方向（即 angle 方向）
+            // 旋转角度 = -(angle - π/2) = π/2 - angle
+            transform.rotate(Math.PI / 2 - angle);
 
             // 绘制单个字符
             String ch = String.valueOf(chars[i]);
             GlyphVector gv = font.createGlyphVector(frc, ch);
             Shape shape = gv.getOutline();
 
-            // 居中偏移（使字符中心对准计算出的位置）
+            // 居中偏移
             Rectangle bounds = shape.getBounds();
             transform.translate(-bounds.width / 2.0, bounds.height / 2.0);
 
@@ -311,10 +347,21 @@ public class SealGeneratorServiceImpl implements SealGeneratorService {
     }
 
     /**
-     * 绘制中心文字
+     * 绘制中心文字（如"合同专用章"）
+     *
+     * @param g2d        图形上下文
+     * @param text       文字内容
+     * @param centerX    圆心X坐标
+     * @param y          文字Y坐标
+     * @param color      颜色
+     * @param sealRadius 印章半径（用于计算字体大小）
      */
-    private void drawCenterText(Graphics2D g2d, String text, int centerX, int y, Color color) {
-        Font font = new Font("宋体", Font.BOLD, 20);
+    private void drawCenterText(Graphics2D g2d, String text, int centerX, int y, Color color, int sealRadius) {
+        // 中心文字字号略小于环绕文字
+        int fontSize = (int) (sealRadius * 0.28);
+        fontSize = Math.max(14, Math.min(fontSize, 24));
+
+        Font font = new Font("宋体", Font.BOLD, fontSize);
         g2d.setFont(font);
         g2d.setColor(color);
 

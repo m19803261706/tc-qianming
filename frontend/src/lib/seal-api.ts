@@ -30,11 +30,22 @@ export interface SealCreateRequest {
   sealName: string;
   sealType: number;
   sealImage: string;
+  /** 印章来源: 1-上传 2-系统生成 3-模板 */
+  sealSource: number;
   ownerId: number;
   ownerType: number;
   ownerName?: string;
   remark?: string;
 }
+
+/**
+ * 印章来源
+ */
+export const SEAL_SOURCES = [
+  { value: 1, label: '上传' },
+  { value: 2, label: '系统生成' },
+  { value: 3, label: '模板' },
+] as const;
 
 /**
  * 印章更新请求

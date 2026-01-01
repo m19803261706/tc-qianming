@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { type Seal, SEAL_STATUS } from '@/lib/seal-api';
+import { getFullFileUrl } from '@/lib/api';
 
 interface SealCardProps {
   seal: Seal;
@@ -28,7 +29,7 @@ export default function SealCard({
       <div className="relative h-40 bg-gray-50 flex items-center justify-center">
         {seal.sealImageUrl ? (
           <Image
-            src={seal.sealImageUrl}
+            src={getFullFileUrl(seal.sealImageUrl)}
             alt={seal.sealName}
             fill
             className="object-contain p-4"

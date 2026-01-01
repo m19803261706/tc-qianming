@@ -48,6 +48,7 @@ import {
   createSeal,
   updateSeal,
 } from '@/lib/seal-api';
+import { getFullFileUrl } from '@/lib/api';
 
 interface SealEditModalProps {
   isOpen: boolean;
@@ -71,6 +72,7 @@ export default function SealEditModal({
     sealType: '1',
     sealImage: '',
     sealImageUrl: '',
+    sealSource: 1,  // 印章来源: 1-上传 2-系统生成 3-模板
     ownerId: 1,
     ownerType: '1',
     ownerName: '',
@@ -98,6 +100,7 @@ export default function SealEditModal({
         sealType: '1',
         sealImage: '',
         sealImageUrl: '',
+        sealSource: 1,
         ownerId: 1,
         ownerType: '1',
         ownerName: '',
@@ -129,6 +132,7 @@ export default function SealEditModal({
           ...prev,
           sealImage: response.data.filePath,
           sealImageUrl: response.data.fileUrl,
+          sealSource: 1,  // 上传
         }));
       } else {
         alert(response.message || '上传失败');
@@ -147,6 +151,7 @@ export default function SealEditModal({
       ...prev,
       sealImage: result.filePath,
       sealImageUrl: result.fileUrl,
+      sealSource: 2,  // 系统生成
     }));
   };
 
@@ -184,6 +189,7 @@ export default function SealEditModal({
           sealName: formData.sealName,
           sealType: Number(formData.sealType),
           sealImage: formData.sealImage,
+          sealSource: formData.sealSource,  // 印章来源
           ownerId: formData.ownerId,
           ownerType: Number(formData.ownerType),
           ownerName: formData.ownerName,
@@ -295,7 +301,7 @@ export default function SealEditModal({
                 <div className="w-28 h-28 border-2 border-dashed border-muted rounded-lg flex items-center justify-center bg-muted/30 overflow-hidden flex-shrink-0">
                   {formData.sealImageUrl ? (
                     <Image
-                      src={formData.sealImageUrl}
+                      src={getFullFileUrl(formData.sealImageUrl)}
                       alt="印章预览"
                       width={100}
                       height={100}
