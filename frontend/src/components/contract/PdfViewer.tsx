@@ -47,6 +47,8 @@ export default function PdfViewer({
   const [currentScale, setCurrentScale] = useState(scale);
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  // 缓存版本号，用于破坏浏览器缓存，确保显示最新预览图
+  const [cacheVersion, setCacheVersion] = useState(() => Date.now());
 
   // 加载预览数据
   useEffect(() => {
@@ -56,6 +58,8 @@ export default function PdfViewer({
         const response = await previewContract(contractId);
         if (response.success) {
           setPreview(response.data);
+          // 更新缓存版本号，确保显示最新预览图
+          setCacheVersion(Date.now());
         } else {
           console.error('加载预览失败:', response.message);
         }
@@ -273,7 +277,7 @@ export default function PdfViewer({
                   className={onPageClick ? 'cursor-crosshair' : ''}
                 >
                   <Image
-                    src={getFullFileUrl(url)}
+                    src={`${getFullFileUrl(url)}?v=${cacheVersion}`}
                     alt={`第 ${pageNumber} 页`}
                     width={preview.width || 600}
                     height={preview.height || 800}
