@@ -12,6 +12,11 @@ import java.util.List;
 
 /**
  * 合同盖章请求 DTO
+ * <p>
+ * 支持两种盖章模式：
+ * 1. 印章盖章：使用 sealId 指定印章（sealType=1 或 2）
+ * 2. 个人签名：使用 signatureId 指定签名（sealType=3）
+ * </p>
  *
  * @author TC System
  */
@@ -22,10 +27,20 @@ import java.util.List;
 public class ContractSealRequest {
 
     /**
-     * 印章ID
+     * 印章ID（sealType=1,2 时必填）
+     * <p>
+     * 当 sealType 为普通章(1)或骑缝章(2)时需要提供
+     * </p>
      */
-    @NotNull(message = "印章ID不能为空")
     private Long sealId;
+
+    /**
+     * 个人签名ID（sealType=3 时必填）
+     * <p>
+     * 当 sealType 为个人签名(3)时需要提供
+     * </p>
+     */
+    private Long signatureId;
 
     /**
      * 盖章位置列表

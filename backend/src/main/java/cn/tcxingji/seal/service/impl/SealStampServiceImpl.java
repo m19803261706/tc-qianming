@@ -7,10 +7,12 @@ import cn.tcxingji.seal.dto.request.SealPositionRequest;
 import cn.tcxingji.seal.dto.response.ContractSealResponse;
 import cn.tcxingji.seal.dto.response.SealRecordResponse;
 import cn.tcxingji.seal.entity.ContractFile;
+import cn.tcxingji.seal.entity.PersonalSignature;
 import cn.tcxingji.seal.entity.SealInfo;
 import cn.tcxingji.seal.entity.SealRecord;
 import cn.tcxingji.seal.exception.BusinessException;
 import cn.tcxingji.seal.repository.ContractFileRepository;
+import cn.tcxingji.seal.repository.PersonalSignatureRepository;
 import cn.tcxingji.seal.repository.SealInfoRepository;
 import cn.tcxingji.seal.repository.SealRecordRepository;
 import cn.tcxingji.seal.service.SealStampService;
@@ -56,6 +58,7 @@ public class SealStampServiceImpl implements SealStampService {
     private final ContractFileRepository contractFileRepository;
     private final SealInfoRepository sealInfoRepository;
     private final SealRecordRepository sealRecordRepository;
+    private final PersonalSignatureRepository personalSignatureRepository;
     private final FileUploadConfig fileUploadConfig;
 
     @Override
@@ -65,24 +68,47 @@ public class SealStampServiceImpl implements SealStampService {
         ContractFile contract = findContractOrThrow(contractId);
         validateContractStatus(contract);
 
-        // 2. 验证印章
-        SealInfo sealInfo = findSealOrThrow(request.getSealId());
-        validateSealStatus(sealInfo);
-
-        // 3. 验证位置参数
+        // 2. 验证位置参数
         validatePositions(request.getPositions(), contract.getPageCount());
 
+        // 3. 根据签章类型获取图片路径
+        Path imagePath;
+        Long recordSealId;
+        Integer sealType = request.getSealType() != null ? request.getSealType() : 1;
+
+        if (sealType == SealRecord.SealType.PERSONAL_SIGNATURE) {
+            // 个人签名模式
+            if (request.getSignatureId() == null) {
+                throw new BusinessException("个人签名ID不能为空");
+            }
+            PersonalSignature signature = findSignatureOrThrow(request.getSignatureId());
+            validateSignatureStatus(signature);
+            imagePath = getSignatureImagePath(signature);
+            recordSealId = signature.getId();
+            log.info("使用个人签名: signatureId={}, name={}", signature.getId(), signature.getSignatureName());
+        } else {
+            // 印章模式（普通章或骑缝章）
+            if (request.getSealId() == null) {
+                throw new BusinessException("印章ID不能为空");
+            }
+            SealInfo sealInfo = findSealOrThrow(request.getSealId());
+            validateSealStatus(sealInfo);
+            imagePath = getSealImagePath(sealInfo);
+            recordSealId = sealInfo.getId();
+            log.info("使用印章: sealId={}, name={}", sealInfo.getId(), sealInfo.getSealName());
+        }
+
         // 4. 执行盖章
-        Path signedPath = doStamp(contract, sealInfo, request.getPositions());
+        Path signedPath = doStampWithImage(contract, imagePath, request.getPositions());
 
         // 5. 保存签章记录
-        List<SealRecord> records = saveSealRecords(contract, sealInfo, request);
+        List<SealRecord> records = saveSealRecordsWithType(contract, recordSealId, request);
 
         // 6. 更新合同状态
         updateContractSigned(contract, signedPath);
 
-        log.info("盖章成功: contractId={}, sealId={}, positions={}",
-                contractId, request.getSealId(), request.getPositions().size());
+        log.info("盖章成功: contractId={}, sealType={}, positions={}",
+                contractId, sealType, request.getPositions().size());
 
         return buildResponse(contract, signedPath, records);
     }
@@ -499,6 +525,127 @@ public class SealStampServiceImpl implements SealStampService {
         if (sealInfo.getStatus() != SealInfo.Status.ENABLED) {
             throw new BusinessException("印章已禁用: " + sealInfo.getSealName());
         }
+    }
+
+    private PersonalSignature findSignatureOrThrow(Long signatureId) {
+        return personalSignatureRepository.findById(signatureId)
+                .orElseThrow(() -> new BusinessException("个人签名不存在: " + signatureId));
+    }
+
+    private void validateSignatureStatus(PersonalSignature signature) {
+        if (signature.getStatus() != PersonalSignature.Status.ENABLED) {
+            throw new BusinessException("个人签名已禁用: " + signature.getSignatureName());
+        }
+    }
+
+    /**
+     * 获取个人签名图片绝对路径
+     */
+    private Path getSignatureImagePath(PersonalSignature signature) {
+        String signatureImage = signature.getSignatureImage();
+        // 如果是相对路径（以 /uploads 开头），转为绝对路径
+        if (signatureImage.startsWith("/uploads/signatures/")) {
+            String relativePath = signatureImage.substring("/uploads/signatures/".length());
+            return Paths.get(fileUploadConfig.getSignaturePath(), relativePath);
+        }
+        // 否则直接使用
+        return Paths.get(signatureImage);
+    }
+
+    /**
+     * 使用图片路径执行盖章
+     *
+     * @param contract  合同文件
+     * @param imagePath 图片路径（印章或签名）
+     * @param positions 盖章位置列表
+     * @return 签章后文件路径
+     */
+    private Path doStampWithImage(ContractFile contract, Path imagePath,
+                                   List<SealPositionRequest> positions) {
+        // 优先使用已签章的 PDF，支持多次签章累加
+        String pathToUse = (contract.getSignedPath() != null && !contract.getSignedPath().isEmpty())
+                ? contract.getSignedPath()
+                : contract.getOriginalPath();
+        Path sourcePath = Paths.get(pathToUse);
+        if (!Files.exists(sourcePath)) {
+            throw new BusinessException("合同文件不存在");
+        }
+
+        if (!Files.exists(imagePath)) {
+            throw new BusinessException("图片文件不存在: " + imagePath);
+        }
+
+        try (PDDocument document = Loader.loadPDF(sourcePath.toFile())) {
+            stampOnDocumentWithImage(document, imagePath, positions);
+            return saveSignedDocument(document, contract);
+        } catch (IOException e) {
+            log.error("盖章处理失败: contractId={}", contract.getId(), e);
+            throw new BusinessException("盖章处理失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 在 PDF 文档上绘制图片（印章或签名）
+     *
+     * @param document  PDF 文档
+     * @param imagePath 图片路径
+     * @param positions 盖章位置列表
+     */
+    private void stampOnDocumentWithImage(PDDocument document, Path imagePath,
+                                           List<SealPositionRequest> positions) throws IOException {
+        // 加载图片
+        PDImageXObject image = PDImageXObject.createFromFile(imagePath.toString(), document);
+
+        // 在每个位置绘制图片
+        for (SealPositionRequest position : positions) {
+            int pageIndex = position.getPageNumber() - 1;  // 转为0索引
+            PDPage page = document.getPage(pageIndex);
+
+            // 使用 APPEND 模式添加内容，保留原有内容
+            try (PDPageContentStream contentStream = new PDPageContentStream(
+                    document, page, PDPageContentStream.AppendMode.APPEND, true, true)) {
+
+                float x = position.getX().floatValue();
+                float y = position.getY().floatValue();
+                float width = position.getWidth().floatValue();
+                float height = position.getHeight().floatValue();
+
+                // 绘制图片
+                contentStream.drawImage(image, x, y, width, height);
+
+                log.debug("绘制图片: page={}, x={}, y={}, w={}, h={}",
+                        position.getPageNumber(), x, y, width, height);
+            }
+        }
+    }
+
+    /**
+     * 保存签章记录（支持印章和签名）
+     */
+    private List<SealRecord> saveSealRecordsWithType(ContractFile contract, Long sealOrSignatureId,
+                                                      ContractSealRequest request) {
+        List<SealRecord> records = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (SealPositionRequest position : request.getPositions()) {
+            SealRecord record = SealRecord.builder()
+                    .contractId(contract.getId())
+                    .sealId(sealOrSignatureId)  // 印章ID或签名ID
+                    .pageNumber(position.getPageNumber())
+                    .positionX(position.getX())
+                    .positionY(position.getY())
+                    .sealWidth(position.getWidth())
+                    .sealHeight(position.getHeight())
+                    .sealType(request.getSealType())
+                    .operatorId(request.getOperatorId())
+                    .operatorName(request.getOperatorName())
+                    .sealTime(now)
+                    .build();
+
+            records.add(sealRecordRepository.save(record));
+        }
+
+        return records;
     }
 
     private void validatePositions(List<SealPositionRequest> positions, Integer pageCount) {

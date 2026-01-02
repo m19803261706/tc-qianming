@@ -58,6 +58,10 @@ export interface FontSignatureRequest {
   fontName: string;
   fontColor?: string;
   signatureName?: string;
+  /** 是否设为默认签名 */
+  setDefault?: boolean;
+  /** 创建者 */
+  createBy?: string;
 }
 
 /**
@@ -67,6 +71,10 @@ export interface HandwriteSignatureRequest {
   userId: number;
   imageData: string;
   signatureName?: string;
+  /** 是否设为默认签名 */
+  setDefault?: boolean;
+  /** 创建者 */
+  createBy?: string;
 }
 
 /**
@@ -76,6 +84,10 @@ export interface FontInfo {
   fontName: string;
   displayName: string;
   preview?: string;
+  /** 字体是否可用 */
+  available?: boolean;
+  /** 字体示例文字 */
+  sample?: string;
 }
 
 // ==================== API 方法 ====================
@@ -193,4 +205,15 @@ export const SIGNATURE_TYPES = [
 export const SIGNATURE_STATUS = [
   { value: 0, label: '禁用', color: 'gray' },
   { value: 1, label: '启用', color: 'green' },
+] as const;
+
+/**
+ * 签名颜色选项
+ */
+export const SIGNATURE_COLORS = [
+  { value: '#000000', label: '黑色', name: '黑色', bgClass: 'bg-black' },
+  { value: '#1a56db', label: '蓝色', name: '蓝色', bgClass: 'bg-blue-600' },
+  { value: '#c81e1e', label: '红色', name: '红色', bgClass: 'bg-red-600' },
+  { value: '#057a55', label: '绿色', name: '绿色', bgClass: 'bg-green-600' },
+  { value: '#6b21a8', label: '紫色', name: '紫色', bgClass: 'bg-purple-700' },
 ] as const;

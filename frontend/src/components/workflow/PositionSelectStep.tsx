@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { PdfViewer, SealPositionPicker, type SealPlacement, placementToSealPosition } from '@/components/contract';
+import { useState, useCallback, useMemo } from 'react';
+import { PdfViewer, SealPositionPicker, type SealPlacement, placementToSealPosition, sealToStampItem } from '@/components/contract';
 import { type Seal } from '@/lib/seal-api';
 import { type Contract, type SealPosition, type ContractSealRequest, sealContract } from '@/lib/contract-api';
 import { getFullFileUrl } from '@/lib/api';
@@ -45,6 +45,9 @@ export default function PositionSelectStep({
   const [pageSize, setPageSize] = useState({ width: 600, height: 800 });
   const [submitting, setSubmitting] = useState(false);
 
+  // 将印章转换为通用 StampItem 接口
+  const stampItem = useMemo(() => sealToStampItem(seal), [seal]);
+
   // 添加印章放置
   const handleAddPlacement = useCallback((placement: SealPlacement) => {
     setPlacements(prev => [...prev, { ...placement, width: sealSize, height: sealSize }]);
@@ -78,7 +81,7 @@ export default function PositionSelectStep({
         pageNumber={page}
         pageWidth={pageWidth}
         pageHeight={pageHeight}
-        selectedSeal={seal}
+        selectedSeal={stampItem}
         placements={placements}
         onAddPlacement={handleAddPlacement}
         onUpdatePlacement={handleUpdatePlacement}
@@ -86,7 +89,7 @@ export default function PositionSelectStep({
         defaultSealSize={sealSize}
       />
     );
-  }, [seal, placements, sealSize, pageSize, handleAddPlacement, handleUpdatePlacement, handleRemovePlacement]);
+  }, [stampItem, placements, sealSize, pageSize, handleAddPlacement, handleUpdatePlacement, handleRemovePlacement]);
 
   // 执行盖章
   const handleSubmit = async () => {

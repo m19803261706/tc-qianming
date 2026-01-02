@@ -68,13 +68,24 @@ export interface SealPosition {
 
 /**
  * 盖章请求
+ *
+ * 支持两种模式：
+ * - 印章模式(sealType=1,2)：使用 sealId
+ * - 签名模式(sealType=3)：使用 signatureId
  */
 export interface ContractSealRequest {
-  sealId: number;
+  /** 印章 ID（sealType=1,2 时必填） */
+  sealId?: number;
+  /** 个人签名 ID（sealType=3 时必填） */
+  signatureId?: number;
+  /** 盖章位置列表 */
   positions: SealPosition[];
+  /** 操作人 ID */
   operatorId: number;
+  /** 操作人姓名 */
   operatorName?: string;
-  sealType?: number; // 1-普通章 2-骑缝章 3-个人签名
+  /** 签章类型（1-普通章 2-骑缝章 3-个人签名） */
+  sealType?: number;
 }
 
 /**

@@ -1,17 +1,49 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import Image from 'next/image';
 import { type Seal } from '@/lib/seal-api';
+import { type Signature } from '@/lib/signature-api';
 import { type SealPosition } from '@/lib/contract-api';
 import { getFullFileUrl } from '@/lib/api';
 
 /**
- * 印章放置信息（前端使用，包含更多UI信息）
+ * 图章/签名通用接口
+ * 用于统一印章和个人签名的处理
+ */
+export interface StampItem {
+  id: number;
+  name: string;
+  imageUrl: string;
+}
+
+/**
+ * 将印章转换为通用图章接口
+ */
+export function sealToStampItem(seal: Seal): StampItem {
+  return {
+    id: seal.id,
+    name: seal.sealName,
+    imageUrl: seal.sealImageUrl,
+  };
+}
+
+/**
+ * 将签名转换为通用图章接口
+ */
+export function signatureToStampItem(signature: Signature): StampItem {
+  return {
+    id: signature.id,
+    name: signature.signatureName,
+    imageUrl: signature.signatureImageUrl || getFullFileUrl(signature.signatureImage),
+  };
+}
+
+/**
+ * 印章/签名放置信息（前端使用，包含更多UI信息）
  */
 export interface SealPlacement {
   id: string; // 唯一标识
-  seal: Seal; // 印章信息
+  seal: StampItem; // 图章/签名信息（使用通用接口）
   pageNumber: number;
   x: number; // 相对于页面的X坐标（像素）
   y: number; // 相对于页面的Y坐标（像素）
@@ -31,21 +63,21 @@ interface SealPositionPickerProps {
   pageWidth: number;
   /** 页面高度 */
   pageHeight: number;
-  /** 当前选中的印章 */
-  selectedSeal: Seal | null;
-  /** 已放置的印章列表 */
+  /** 当前选中的图章/签名（通用接口） */
+  selectedSeal: StampItem | null;
+  /** 已放置的图章/签名列表 */
   placements: SealPlacement[];
-  /** 添加印章回调 */
+  /** 添加图章/签名回调 */
   onAddPlacement: (placement: SealPlacement) => void;
-  /** 更新印章位置回调 */
+  /** 更新位置回调 */
   onUpdatePlacement: (id: string, updates: Partial<SealPlacement>) => void;
-  /** 删除印章回调 */
+  /** 删除回调 */
   onRemovePlacement: (id: string) => void;
-  /** 印章默认尺寸 */
+  /** 默认尺寸 */
   defaultSealSize?: number;
-  /** 印章最小尺寸 */
+  /** 最小尺寸 */
   minSealSize?: number;
-  /** 印章最大尺寸 */
+  /** 最大尺寸 */
   maxSealSize?: number;
 }
 
@@ -302,15 +334,12 @@ export default function SealPositionPicker({
           onMouseDown={(e) => handleDragStart(e, placement)}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* 印章图片 */}
-          <Image
-            src={getFullFileUrl(placement.seal.sealImageUrl)}
-            alt={placement.seal.sealName}
-            width={placement.width}
-            height={placement.height}
+          {/* 印章/签名图片 */}
+          <img
+            src={placement.seal.imageUrl.startsWith('http') ? placement.seal.imageUrl : getFullFileUrl(placement.seal.imageUrl)}
+            alt={placement.seal.name}
             className="w-full h-full object-contain select-none pointer-events-none"
             draggable={false}
-            unoptimized
           />
 
           {/* 选中边框 */}
