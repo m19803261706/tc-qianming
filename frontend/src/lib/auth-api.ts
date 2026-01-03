@@ -123,15 +123,18 @@ export async function login(data: LoginRequest): Promise<ApiResponse<LoginRespon
 
   const result = await response.json();
 
+  // 判断是否成功 (后端返回 code: 200 表示成功)
+  const isSuccess = result.code === 200;
+
   // 登录成功，保存 Token 和用户信息
-  if (result.success && result.data) {
+  if (isSuccess && result.data) {
     setToken(result.data.token);
     setStoredUser(result.data.user);
   }
 
   return {
     ...result,
-    success: result.success ?? result.code === 200,
+    success: isSuccess,
   };
 }
 
