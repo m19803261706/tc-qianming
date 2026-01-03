@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.core.io.Resource;
@@ -72,6 +74,25 @@ public class ContractServiceImpl implements ContractService {
      * 预览图 DPI
      */
     private static final float PREVIEW_DPI = 150f;
+
+    /**
+     * 预览生成结果（内部类）
+     * 包含预览图 URL、PDF 尺寸和图片尺寸信息
+     */
+    @lombok.Data
+    @lombok.AllArgsConstructor
+    private static class PreviewResult {
+        /** 预览图 URL 列表 */
+        private List<String> previewUrls;
+        /** PDF 页面宽度（pt） */
+        private float pdfWidth;
+        /** PDF 页面高度（pt） */
+        private float pdfHeight;
+        /** 预览图片宽度（像素） */
+        private int imageWidth;
+        /** 预览图片高度（像素） */
+        private int imageHeight;
+    }
 
     @Override
     @Transactional
@@ -221,14 +242,18 @@ public class ContractServiceImpl implements ContractService {
         }
 
         // 生成所有页的预览图（签章后使用不同的子目录）
-        List<String> previewUrls = generatePreviewImages(contractFile, pdfPath, -1, isSigned);
+        PreviewResult result = generatePreviewImages(contractFile, pdfPath, -1, isSigned);
 
         return ContractPreviewResponse.builder()
                 .contractId(id)
                 .fileName(contractFile.getFileName())
                 .totalPages(contractFile.getPageCount())
                 .currentPage(1)
-                .previewUrls(previewUrls)
+                .previewUrls(result.getPreviewUrls())
+                .width(result.getImageWidth())
+                .height(result.getImageHeight())
+                .pdfWidth(result.getPdfWidth())
+                .pdfHeight(result.getPdfHeight())
                 .build();
     }
 
@@ -250,15 +275,19 @@ public class ContractServiceImpl implements ContractService {
         }
 
         // 生成单页预览图（签章后使用不同的子目录）
-        List<String> previewUrls = generatePreviewImages(contractFile, pdfPath, page, isSigned);
+        PreviewResult result = generatePreviewImages(contractFile, pdfPath, page, isSigned);
 
         return ContractPreviewResponse.builder()
                 .contractId(id)
                 .fileName(contractFile.getFileName())
                 .totalPages(contractFile.getPageCount())
                 .currentPage(page)
-                .previewUrl(previewUrls.isEmpty() ? null : previewUrls.get(0))
-                .previewUrls(previewUrls)
+                .previewUrl(result.getPreviewUrls().isEmpty() ? null : result.getPreviewUrls().get(0))
+                .previewUrls(result.getPreviewUrls())
+                .width(result.getImageWidth())
+                .height(result.getImageHeight())
+                .pdfWidth(result.getPdfWidth())
+                .pdfHeight(result.getPdfHeight())
                 .build();
     }
 
@@ -416,10 +445,14 @@ public class ContractServiceImpl implements ContractService {
      * @param pdfPath      PDF 路径
      * @param targetPage   目标页码（-1 表示所有页）
      * @param isSigned     是否为签章后的 PDF（签章后使用不同的子目录）
-     * @return 预览图片 URL 列表
+     * @return 预览结果（包含 URL 列表、PDF 尺寸和图片尺寸）
      */
-    private List<String> generatePreviewImages(ContractFile contractFile, Path pdfPath, int targetPage, boolean isSigned) {
+    private PreviewResult generatePreviewImages(ContractFile contractFile, Path pdfPath, int targetPage, boolean isSigned) {
         List<String> previewUrls = new ArrayList<>();
+        float pdfWidth = 595f;  // 默认 A4 宽度
+        float pdfHeight = 842f; // 默认 A4 高度
+        int imageWidth = 0;
+        int imageHeight = 0;
 
         // 预览图存储目录（签章后使用 signed 子目录）
         String subDir = isSigned ? "signed" : "original";
@@ -439,15 +472,34 @@ public class ContractServiceImpl implements ContractService {
                 int startPage = targetPage > 0 ? targetPage - 1 : 0;
                 int endPage = targetPage > 0 ? targetPage : pageCount;
 
+                // 获取第一页的 PDF 实际尺寸（用于坐标转换）
+                if (pageCount > 0) {
+                    PDPage firstPage = document.getPage(startPage);
+                    PDRectangle mediaBox = firstPage.getMediaBox();
+                    pdfWidth = mediaBox.getWidth();
+                    pdfHeight = mediaBox.getHeight();
+                    log.debug("PDF 实际尺寸: width={} pt, height={} pt", pdfWidth, pdfHeight);
+                }
+
                 for (int i = startPage; i < endPage; i++) {
                     String imageName = String.format("page_%d.png", i + 1);
                     Path imagePath = previewPath.resolve(imageName);
 
-                    // 如果预览图已存在，直接返回 URL
-                    if (!Files.exists(imagePath)) {
-                        BufferedImage image = renderer.renderImageWithDPI(i, PREVIEW_DPI, ImageType.RGB);
+                    BufferedImage image;
+                    // 如果预览图已存在，读取它获取尺寸；否则生成新的
+                    if (Files.exists(imagePath)) {
+                        image = ImageIO.read(imagePath.toFile());
+                    } else {
+                        image = renderer.renderImageWithDPI(i, PREVIEW_DPI, ImageType.RGB);
                         ImageIO.write(image, "PNG", imagePath.toFile());
                         log.debug("生成预览图: {}", imagePath);
+                    }
+
+                    // 记录第一张图片的尺寸
+                    if (i == startPage && image != null) {
+                        imageWidth = image.getWidth();
+                        imageHeight = image.getHeight();
+                        log.debug("预览图尺寸: width={} px, height={} px", imageWidth, imageHeight);
                     }
 
                     String url = String.format("/uploads/contracts/preview/%d/%s/%s",
@@ -461,7 +513,7 @@ public class ContractServiceImpl implements ContractService {
             throw new BusinessException("生成预览图失败，请重试");
         }
 
-        return previewUrls;
+        return new PreviewResult(previewUrls, pdfWidth, pdfHeight, imageWidth, imageHeight);
     }
 
     /**

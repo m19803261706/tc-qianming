@@ -59,8 +59,10 @@ export default function PdfSealEditor({
   const [placements, setPlacements] = useState<SealPlacement[]>([]);
   // 当前页码
   const [currentPage, setCurrentPage] = useState(1);
-  // 页面尺寸
+  // 页面尺寸（预览图像素尺寸）
   const [pageSize, setPageSize] = useState({ width: 600, height: 800 });
+  // PDF 实际尺寸（pt），用于精确坐标转换
+  const [pdfSize, setPdfSize] = useState({ width: 595, height: 842 });
   // 提交状态
   const [submitting, setSubmitting] = useState(false);
 
@@ -101,10 +103,20 @@ export default function PdfSealEditor({
   }, []);
 
   // 渲染叠加层
-  const renderOverlay = useCallback((page: number, pageWidth: number, pageHeight: number) => {
-    // 保存页面尺寸
+  const renderOverlay = useCallback((
+    page: number,
+    pageWidth: number,
+    pageHeight: number,
+    pdfWidth: number,
+    pdfHeight: number
+  ) => {
+    // 保存预览图像素尺寸
     if (pageWidth !== pageSize.width || pageHeight !== pageSize.height) {
       setPageSize({ width: pageWidth, height: pageHeight });
+    }
+    // 保存 PDF 实际尺寸（pt）
+    if (pdfWidth !== pdfSize.width || pdfHeight !== pdfSize.height) {
+      setPdfSize({ width: pdfWidth, height: pdfHeight });
     }
 
     return (
@@ -120,7 +132,7 @@ export default function PdfSealEditor({
         defaultSealSize={stampSize}
       />
     );
-  }, [currentSelected, placements, stampSize, pageSize, handleAddPlacement, handleUpdatePlacement, handleRemovePlacement]);
+  }, [currentSelected, placements, stampSize, pageSize, pdfSize, handleAddPlacement, handleUpdatePlacement, handleRemovePlacement]);
 
   // 提交盖章
   const handleSubmit = async () => {
@@ -140,11 +152,11 @@ export default function PdfSealEditor({
           sealGroups.set(p.seal.id, list);
         });
 
-        // 为每个印章创建请求
+        // 为每个印章创建请求（使用实际 PDF 尺寸进行精确转换）
         const requests: ContractSealRequest[] = [];
         sealGroups.forEach((placementList, sealId) => {
           const positions: SealPosition[] = placementList.map(p =>
-            placementToSealPosition(p, pageSize.width, pageSize.height)
+            placementToSealPosition(p, pageSize.width, pageSize.height, pdfSize.width, pdfSize.height)
           );
 
           requests.push({
@@ -172,11 +184,11 @@ export default function PdfSealEditor({
           signatureGroups.set(p.seal.id, list);
         });
 
-        // 为每个签名创建请求
+        // 为每个签名创建请求（使用实际 PDF 尺寸进行精确转换）
         const requests: ContractSealRequest[] = [];
         signatureGroups.forEach((placementList, signatureId) => {
           const positions: SealPosition[] = placementList.map(p =>
-            placementToSealPosition(p, pageSize.width, pageSize.height)
+            placementToSealPosition(p, pageSize.width, pageSize.height, pdfSize.width, pdfSize.height)
           );
 
           requests.push({

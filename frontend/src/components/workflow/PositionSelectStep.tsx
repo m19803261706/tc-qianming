@@ -43,6 +43,8 @@ export default function PositionSelectStep({
 }: PositionSelectStepProps) {
   const [placements, setPlacements] = useState<SealPlacement[]>([]);
   const [pageSize, setPageSize] = useState({ width: 600, height: 800 });
+  // PDF 实际尺寸（pt），用于精确坐标转换
+  const [pdfSize, setPdfSize] = useState({ width: 595, height: 842 });
   const [submitting, setSubmitting] = useState(false);
 
   // 将印章转换为通用 StampItem 接口
@@ -71,9 +73,20 @@ export default function PositionSelectStep({
   }, []);
 
   // 渲染叠加层
-  const renderOverlay = useCallback((page: number, pageWidth: number, pageHeight: number) => {
+  const renderOverlay = useCallback((
+    page: number,
+    pageWidth: number,
+    pageHeight: number,
+    pdfWidth: number,
+    pdfHeight: number
+  ) => {
+    // 更新预览图像素尺寸
     if (pageWidth !== pageSize.width || pageHeight !== pageSize.height) {
       setPageSize({ width: pageWidth, height: pageHeight });
+    }
+    // 更新 PDF 实际尺寸（pt）
+    if (pdfWidth !== pdfSize.width || pdfHeight !== pdfSize.height) {
+      setPdfSize({ width: pdfWidth, height: pdfHeight });
     }
 
     return (
@@ -89,7 +102,7 @@ export default function PositionSelectStep({
         defaultSealSize={sealSize}
       />
     );
-  }, [stampItem, placements, sealSize, pageSize, handleAddPlacement, handleUpdatePlacement, handleRemovePlacement]);
+  }, [stampItem, placements, sealSize, pageSize, pdfSize, handleAddPlacement, handleUpdatePlacement, handleRemovePlacement]);
 
   // 执行盖章
   const handleSubmit = async () => {
@@ -101,9 +114,9 @@ export default function PositionSelectStep({
     setSubmitting(true);
 
     try {
-      // 转换位置为 API 格式
+      // 转换位置为 API 格式（使用实际 PDF 尺寸进行精确转换）
       const positions: SealPosition[] = placements.map(p =>
-        placementToSealPosition(p, pageSize.width, pageSize.height)
+        placementToSealPosition(p, pageSize.width, pageSize.height, pdfSize.width, pdfSize.height)
       );
 
       const request: ContractSealRequest = {

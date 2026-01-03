@@ -51,8 +51,14 @@ export interface ContractPreview {
   currentPage: number;
   previewUrls: string[];
   previewUrl?: string;
+  /** 预览图片宽度（像素） */
   width: number;
+  /** 预览图片高度（像素） */
   height: number;
+  /** PDF 实际页面宽度（pt，用于坐标精确转换） */
+  pdfWidth?: number;
+  /** PDF 实际页面高度（pt，用于坐标精确转换） */
+  pdfHeight?: number;
 }
 
 /**

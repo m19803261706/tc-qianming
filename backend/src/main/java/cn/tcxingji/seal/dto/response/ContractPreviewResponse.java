@@ -49,12 +49,22 @@ public class ContractPreviewResponse {
     private String previewUrl;
 
     /**
-     * 图片宽度
+     * 预览图片宽度（像素）
      */
     private Integer width;
 
     /**
-     * 图片高度
+     * 预览图片高度（像素）
      */
     private Integer height;
+
+    /**
+     * PDF 实际页面宽度（pt，用于坐标精确转换）
+     */
+    private Float pdfWidth;
+
+    /**
+     * PDF 实际页面高度（pt，用于坐标精确转换）
+     */
+    private Float pdfHeight;
 }

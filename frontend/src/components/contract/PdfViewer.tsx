@@ -16,8 +16,15 @@ interface PdfViewerProps {
   scale?: number;
   /** 是否显示页码 */
   showPageNumbers?: boolean;
-  /** 叠加层渲染函数（用于渲染印章等元素） */
-  renderOverlay?: (page: number, pageWidth: number, pageHeight: number) => React.ReactNode;
+  /**
+   * 叠加层渲染函数（用于渲染印章等元素）
+   * @param page 页码
+   * @param pageWidth 预览图片宽度（像素）
+   * @param pageHeight 预览图片高度（像素）
+   * @param pdfWidth PDF 实际宽度（pt，用于坐标精确转换）
+   * @param pdfHeight PDF 实际高度（pt，用于坐标精确转换）
+   */
+  renderOverlay?: (page: number, pageWidth: number, pageHeight: number, pdfWidth: number, pdfHeight: number) => React.ReactNode;
   /** 高度类名 */
   heightClassName?: string;
 }
@@ -293,7 +300,13 @@ export default function PdfViewer({
                     className="absolute inset-0 pointer-events-none"
                     style={{ pointerEvents: 'none' }}
                   >
-                    {renderOverlay(pageNumber, preview.width || 600, preview.height || 800)}
+                    {renderOverlay(
+                      pageNumber,
+                      preview.width || 600,
+                      preview.height || 800,
+                      preview.pdfWidth || 595,  // PDF 实际宽度（pt），默认 A4
+                      preview.pdfHeight || 842  // PDF 实际高度（pt），默认 A4
+                    )}
                   </div>
                 )}
 
