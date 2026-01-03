@@ -16,6 +16,7 @@ import {
   Home,
   Settings,
   ChevronRight,
+  Users,
 } from 'lucide-react';
 
 import {
@@ -72,6 +73,12 @@ const menuItems = [
  */
 const settingsItems = [
   {
+    title: '账号管理',
+    url: '/settings/accounts',
+    icon: Users,
+    description: '管理系统用户',
+  },
+  {
     title: '系统设置',
     url: '/settings',
     icon: Settings,
@@ -88,6 +95,10 @@ export function AppSidebar() {
   const isActive = (url: string) => {
     if (url === '/') {
       return pathname === '/';
+    }
+    // /settings 只在精确匹配时激活，避免与 /settings/accounts 冲突
+    if (url === '/settings') {
+      return pathname === '/settings';
     }
     return pathname.startsWith(url);
   };
