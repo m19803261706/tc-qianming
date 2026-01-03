@@ -1,7 +1,9 @@
 /**
  * API 请求封装
- * 提供统一的 HTTP 请求方法
+ * 提供统一的 HTTP 请求方法，自动添加认证头
  */
+
+import { getToken, removeToken } from './auth-api';
 
 /** API 基础 URL - 必须在环境变量中配置 NEXT_PUBLIC_API_URL */
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -10,6 +12,21 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
 if (typeof window !== 'undefined') {
   console.log('[API] Base URL:', API_BASE_URL);
   console.log('[API] Env value:', process.env.NEXT_PUBLIC_API_URL);
+}
+
+/**
+ * 401 响应处理回调
+ */
+type UnauthorizedCallback = () => void;
+
+let onUnauthorized: UnauthorizedCallback | null = null;
+
+/**
+ * 设置 401 响应处理回调
+ * 通常由 AuthProvider 设置，用于跳转登录页
+ */
+export function setUnauthorizedCallback(callback: UnauthorizedCallback) {
+  onUnauthorized = callback;
 }
 
 /**
@@ -63,23 +80,54 @@ function buildUrl(path: string, params?: Record<string, string | number | undefi
 }
 
 /**
+ * 获取认证请求头
+ */
+function getAuthHeaders(): HeadersInit {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+
+  // 在客户端自动添加认证头
+  if (typeof window !== 'undefined') {
+    const token = getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+
+  return headers;
+}
+
+/**
  * 通用请求方法
+ * 自动添加认证头，处理 401 响应
  */
 async function request<T>(path: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
   const { params, ...fetchOptions } = options;
   const url = buildUrl(path, params);
 
-  const defaultHeaders: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
-
   const response = await fetch(url, {
     ...fetchOptions,
     headers: {
-      ...defaultHeaders,
-      ...fetchOptions.headers,
+      ...getAuthHeaders(),
+      ...(fetchOptions.headers as Record<string, string>),
     },
   });
+
+  // 处理 401 未授权响应
+  if (response.status === 401) {
+    console.warn('[API] 收到 401 响应，清除认证状态');
+    removeToken();
+    if (onUnauthorized) {
+      onUnauthorized();
+    }
+    return {
+      code: 401,
+      message: '登录已过期，请重新登录',
+      data: null as unknown as T,
+      success: false,
+    };
+  }
 
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
@@ -128,17 +176,43 @@ export async function del<T>(path: string): Promise<ApiResponse<T>> {
 }
 
 /**
- * 文件上传
+ * 文件上传（带认证）
  */
 export async function uploadFile<T>(path: string, file: File, fieldName = 'file'): Promise<ApiResponse<T>> {
   const formData = new FormData();
   formData.append(fieldName, file);
 
   const url = buildUrl(path);
+
+  // 构建认证头（文件上传不需要 Content-Type，浏览器会自动设置）
+  const headers: HeadersInit = {};
+  if (typeof window !== 'undefined') {
+    const token = getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+
   const response = await fetch(url, {
     method: 'POST',
+    headers,
     body: formData,
   });
+
+  // 处理 401 未授权响应
+  if (response.status === 401) {
+    console.warn('[API] 收到 401 响应，清除认证状态');
+    removeToken();
+    if (onUnauthorized) {
+      onUnauthorized();
+    }
+    return {
+      code: 401,
+      message: '登录已过期，请重新登录',
+      data: null as unknown as T,
+      success: false,
+    };
+  }
 
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
