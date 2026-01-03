@@ -234,7 +234,7 @@ export default function SealPositionPicker({
     });
   }, []);
 
-  // 缩放移动
+  // 缩放移动（保持原始宽高比）
   const handleResizeMove = useCallback((e: React.MouseEvent) => {
     if (!resizingId || !resizeHandle) return;
 
@@ -245,8 +245,12 @@ export default function SealPositionPicker({
     const deltaX = e.clientX - resizeStart.x;
     const deltaY = e.clientY - resizeStart.y;
 
-    // 根据手柄位置计算新尺寸（保持 1:1 比例）
-    let newSize = resizeStart.width;
+    // 计算原始宽高比
+    const aspectRatio = resizeStart.width / resizeStart.height;
+
+    // 根据手柄位置计算新尺寸（保持原始宽高比）
+    let newWidth = resizeStart.width;
+    let newHeight = resizeStart.height;
     let newX = resizeStart.originX;
     let newY = resizeStart.originY;
 
@@ -256,46 +260,51 @@ export default function SealPositionPicker({
     switch (resizeHandle) {
       case 'bottom-right':
         // 右下角：增大delta = 放大
-        newSize = resizeStart.width + delta;
+        newWidth = resizeStart.width + delta;
+        newHeight = newWidth / aspectRatio;
         break;
       case 'top-left':
         // 左上角：减小delta = 放大
-        newSize = resizeStart.width - delta;
-        newX = resizeStart.originX + (resizeStart.width - newSize);
-        newY = resizeStart.originY + (resizeStart.height - newSize);
+        newWidth = resizeStart.width - delta;
+        newHeight = newWidth / aspectRatio;
+        newX = resizeStart.originX + (resizeStart.width - newWidth);
+        newY = resizeStart.originY + (resizeStart.height - newHeight);
         break;
       case 'top-right':
         // 右上角：X增大=放大, Y减小=放大
-        newSize = resizeStart.width + deltaX;
-        newY = resizeStart.originY + (resizeStart.height - newSize);
+        newWidth = resizeStart.width + deltaX;
+        newHeight = newWidth / aspectRatio;
+        newY = resizeStart.originY + (resizeStart.height - newHeight);
         break;
       case 'bottom-left':
         // 左下角：X减小=放大, Y增大=放大
-        newSize = resizeStart.width - deltaX;
-        newX = resizeStart.originX + (resizeStart.width - newSize);
+        newWidth = resizeStart.width - deltaX;
+        newHeight = newWidth / aspectRatio;
+        newX = resizeStart.originX + (resizeStart.width - newWidth);
         break;
     }
 
-    // 限制尺寸范围
-    newSize = Math.max(minSealSize, Math.min(maxSealSize, newSize));
+    // 限制尺寸范围（以宽度为基准）
+    newWidth = Math.max(minSealSize, Math.min(maxSealSize, newWidth));
+    newHeight = newWidth / aspectRatio;
 
     // 重新计算位置以适应尺寸限制
     if (resizeHandle === 'top-left' || resizeHandle === 'bottom-left') {
-      newX = resizeStart.originX + (resizeStart.width - newSize);
+      newX = resizeStart.originX + (resizeStart.width - newWidth);
     }
     if (resizeHandle === 'top-left' || resizeHandle === 'top-right') {
-      newY = resizeStart.originY + (resizeStart.height - newSize);
+      newY = resizeStart.originY + (resizeStart.height - newHeight);
     }
 
     // 边界检查
-    newX = Math.max(0, Math.min(newX, pageWidth - newSize));
-    newY = Math.max(0, Math.min(newY, pageHeight - newSize));
+    newX = Math.max(0, Math.min(newX, pageWidth - newWidth));
+    newY = Math.max(0, Math.min(newY, pageHeight - newHeight));
 
     onUpdatePlacement(resizingId, {
       x: newX,
       y: newY,
-      width: newSize,
-      height: newSize,
+      width: newWidth,
+      height: newHeight,
     });
   }, [resizingId, resizeHandle, resizeStart, placements, minSealSize, maxSealSize, pageWidth, pageHeight, onUpdatePlacement]);
 

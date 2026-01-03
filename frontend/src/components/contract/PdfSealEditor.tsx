@@ -81,9 +81,10 @@ export default function PdfSealEditor({
   }, []);
 
   // 添加印章/签名放置
+  // 注意：不再强制覆盖 width/height，保留 SealPositionPicker 中根据图片宽高比计算的尺寸
   const handleAddPlacement = useCallback((placement: SealPlacement) => {
-    setPlacements(prev => [...prev, { ...placement, width: stampSize, height: stampSize }]);
-  }, [stampSize]);
+    setPlacements(prev => [...prev, placement]);
+  }, []);
 
   // 更新印章/签名位置
   const handleUpdatePlacement = useCallback((id: string, updates: Partial<SealPlacement>) => {
