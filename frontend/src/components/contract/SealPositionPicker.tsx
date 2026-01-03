@@ -66,9 +66,9 @@ type ResizeHandle = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 interface SealPositionPickerProps {
   /** 页码 */
   pageNumber: number;
-  /** 页面宽度 */
+  /** 页面宽度（原始像素尺寸） */
   pageWidth: number;
-  /** 页面高度 */
+  /** 页面高度（原始像素尺寸） */
   pageHeight: number;
   /** 当前选中的图章/签名（通用接口） */
   selectedSeal: StampItem | null;
@@ -86,6 +86,8 @@ interface SealPositionPickerProps {
   minSealSize?: number;
   /** 最大尺寸 */
   maxSealSize?: number;
+  /** 当前缩放比例（用于坐标转换，CSS transform scale 会影响坐标计算） */
+  scale?: number;
 }
 
 /**
@@ -109,6 +111,7 @@ export default function SealPositionPicker({
   defaultSealSize = 80,
   minSealSize = 30,
   maxSealSize = 200,
+  scale = 1, // CSS transform scale 会影响 getBoundingClientRect 返回的坐标
 }: SealPositionPickerProps) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -154,9 +157,11 @@ export default function SealPositionPicker({
       }
     }
 
+    // 注意：当使用 CSS transform: scale() 时，getBoundingClientRect() 返回的是视觉尺寸（已缩放）
+    // 但鼠标坐标是视觉坐标，需要除以 scale 转换为内部坐标
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left - placementWidth / 2;
-    const y = e.clientY - rect.top - placementHeight / 2;
+    const x = (e.clientX - rect.left) / scale - placementWidth / 2;
+    const y = (e.clientY - rect.top) / scale - placementHeight / 2;
 
     // 边界检查
     const boundedX = Math.max(0, Math.min(x, pageWidth - placementWidth));
@@ -173,37 +178,39 @@ export default function SealPositionPicker({
     };
 
     onAddPlacement(placement);
-  }, [selectedSeal, draggingId, resizingId, pageNumber, pageWidth, pageHeight, defaultSealSize, onAddPlacement]);
+  }, [selectedSeal, draggingId, resizingId, pageNumber, pageWidth, pageHeight, defaultSealSize, onAddPlacement, scale]);
 
   // 开始拖拽
   const handleDragStart = useCallback((e: React.MouseEvent, placement: SealPlacement) => {
     e.stopPropagation();
     setDraggingId(placement.id);
 
+    // CSS transform: scale() 影响坐标计算，需要除以 scale
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) / scale,
+      y: (e.clientY - rect.top) / scale,
     });
-  }, []);
+  }, [scale]);
 
   // 拖拽移动
   const handleDragMove = useCallback((e: React.MouseEvent) => {
     if (!draggingId || !containerRef.current) return;
 
+    // CSS transform: scale() 影响坐标计算，需要除以 scale
     const rect = containerRef.current.getBoundingClientRect();
     const placement = placements.find(p => p.id === draggingId);
     if (!placement) return;
 
-    let x = e.clientX - rect.left - dragOffset.x;
-    let y = e.clientY - rect.top - dragOffset.y;
+    let x = (e.clientX - rect.left) / scale - dragOffset.x;
+    let y = (e.clientY - rect.top) / scale - dragOffset.y;
 
     // 边界检查
     x = Math.max(0, Math.min(x, pageWidth - placement.width));
     y = Math.max(0, Math.min(y, pageHeight - placement.height));
 
     onUpdatePlacement(draggingId, { x, y });
-  }, [draggingId, dragOffset, pageWidth, pageHeight, placements, onUpdatePlacement]);
+  }, [draggingId, dragOffset, pageWidth, pageHeight, placements, onUpdatePlacement, scale]);
 
   // 结束拖拽
   const handleDragEnd = useCallback(() => {
@@ -241,9 +248,9 @@ export default function SealPositionPicker({
     const placement = placements.find(p => p.id === resizingId);
     if (!placement) return;
 
-    // 计算鼠标移动距离
-    const deltaX = e.clientX - resizeStart.x;
-    const deltaY = e.clientY - resizeStart.y;
+    // 计算鼠标移动距离（CSS transform: scale() 影响坐标，需要除以 scale）
+    const deltaX = (e.clientX - resizeStart.x) / scale;
+    const deltaY = (e.clientY - resizeStart.y) / scale;
 
     // 计算原始宽高比
     const aspectRatio = resizeStart.width / resizeStart.height;
@@ -306,7 +313,7 @@ export default function SealPositionPicker({
       width: newWidth,
       height: newHeight,
     });
-  }, [resizingId, resizeHandle, resizeStart, placements, minSealSize, maxSealSize, pageWidth, pageHeight, onUpdatePlacement]);
+  }, [resizingId, resizeHandle, resizeStart, placements, minSealSize, maxSealSize, pageWidth, pageHeight, onUpdatePlacement, scale]);
 
   // 结束缩放
   const handleResizeEnd = useCallback(() => {

@@ -23,8 +23,9 @@ interface PdfViewerProps {
    * @param pageHeight 预览图片高度（像素）
    * @param pdfWidth PDF 实际宽度（pt，用于坐标精确转换）
    * @param pdfHeight PDF 实际高度（pt，用于坐标精确转换）
+   * @param scale 当前缩放比例（用于坐标转换）
    */
-  renderOverlay?: (page: number, pageWidth: number, pageHeight: number, pdfWidth: number, pdfHeight: number) => React.ReactNode;
+  renderOverlay?: (page: number, pageWidth: number, pageHeight: number, pdfWidth: number, pdfHeight: number, scale: number) => React.ReactNode;
   /** 高度类名 */
   heightClassName?: string;
 }
@@ -305,7 +306,8 @@ export default function PdfViewer({
                       preview.width || 600,
                       preview.height || 800,
                       preview.pdfWidth || 595,  // PDF 实际宽度（pt），默认 A4
-                      preview.pdfHeight || 842  // PDF 实际高度（pt），默认 A4
+                      preview.pdfHeight || 842, // PDF 实际高度（pt），默认 A4
+                      currentScale              // 当前缩放比例
                     )}
                   </div>
                 )}

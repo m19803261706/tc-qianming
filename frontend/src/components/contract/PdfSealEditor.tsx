@@ -109,7 +109,8 @@ export default function PdfSealEditor({
     pageWidth: number,
     pageHeight: number,
     pdfWidth: number,
-    pdfHeight: number
+    pdfHeight: number,
+    scale: number // CSS transform scale 会影响坐标计算
   ) => {
     // 保存预览图像素尺寸
     if (pageWidth !== pageSize.width || pageHeight !== pageSize.height) {
@@ -131,6 +132,7 @@ export default function PdfSealEditor({
         onUpdatePlacement={handleUpdatePlacement}
         onRemovePlacement={handleRemovePlacement}
         defaultSealSize={stampSize}
+        scale={scale} // 传递缩放比例用于正确的坐标计算
       />
     );
   }, [currentSelected, placements, stampSize, pageSize, pdfSize, handleAddPlacement, handleUpdatePlacement, handleRemovePlacement]);
