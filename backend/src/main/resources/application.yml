@@ -59,6 +59,13 @@ file:
     # 签名图片存储路径
     signature-path: ./uploads/signatures
 
+# JWT 认证配置
+jwt:
+  # JWT 签名密钥（生产环境请使用更复杂的密钥）
+  secret: TaiChuXingJi2026SecretKeyForJwtTokenGeneration
+  # Token 过期时间（毫秒），默认 24 小时
+  expiration: 86400000
+
 # 日志配置
 logging:
   level:
