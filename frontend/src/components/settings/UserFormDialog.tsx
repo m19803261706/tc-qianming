@@ -7,6 +7,10 @@
  */
 
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -15,53 +19,49 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { User, CreateUserRequest, UpdateUserRequest, UserStatus } from '@/lib/user-api';
 import { Loader2 } from 'lucide-react';
+import { User, CreateUserRequest, UpdateUserRequest, UserStatus } from '@/lib/user-api';
 
 interface UserFormDialogProps {
-  /** 是否打开 */
   open: boolean;
-  /** 关闭回调 */
   onOpenChange: (open: boolean) => void;
-  /** 编辑模式下的用户数据（为空表示新增） */
-  user?: User | null;
-  /** 保存回调 */
+  user: User | null;
   onSave: (data: CreateUserRequest | UpdateUserRequest, isEdit: boolean) => Promise<void>;
 }
 
-/**
- * 用户表单弹窗
- */
-export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDialogProps) {
+export function UserFormDialog({
+  open,
+  onOpenChange,
+  user,
+  onSave,
+}: UserFormDialogProps) {
   const isEdit = !!user;
 
   // 表单状态
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
-  const [status, setStatus] = useState(UserStatus.ENABLED);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [status, setStatus] = useState<UserStatus>(UserStatus.ENABLED);
 
   // 加载和错误状态
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 初始化表单数据
+  // 初始化表单
   useEffect(() => {
     if (open) {
       if (user) {
-        // 编辑模式：填充数据
         setUsername(user.username);
-        setPassword(''); // 密码不回填
+        setPassword('');
         setNickname(user.nickname || '');
+        setIsAdmin(user.isAdmin);
         setStatus(user.status);
       } else {
-        // 新增模式：重置表单
         setUsername('');
         setPassword('');
         setNickname('');
+        setIsAdmin(false);
         setStatus(UserStatus.ENABLED);
       }
       setError(null);
@@ -76,7 +76,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDia
     setError(null);
 
     // 表单验证
-    if (!isEdit && !username.trim()) {
+    if (!username.trim()) {
       setError('请输入用户名');
       return;
     }
@@ -85,11 +85,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDia
       return;
     }
     if (!isEdit && password.length < 6) {
-      setError('密码长度至少 6 位');
-      return;
-    }
-    if (isEdit && password && password.length < 6) {
-      setError('密码长度至少 6 位');
+      setError('密码长度不能少于6位');
       return;
     }
 
@@ -97,32 +93,30 @@ export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDia
 
     try {
       if (isEdit) {
-        // 编辑模式
-        const data: UpdateUserRequest = {
+        const updateData: UpdateUserRequest = {
           nickname: nickname.trim() || undefined,
+          isAdmin,
           status,
         };
-        // 只有填写了密码才更新密码
         if (password.trim()) {
-          data.password = password;
+          updateData.password = password;
         }
-        await onSave(data, true);
+        await onSave(updateData, true);
       } else {
-        // 新增模式
-        const data: CreateUserRequest = {
+        const createData: CreateUserRequest = {
           username: username.trim(),
-          password: password,
+          password,
           nickname: nickname.trim() || undefined,
-          status,
+          isAdmin,
         };
-        await onSave(data, false);
+        await onSave(createData, false);
       }
       onOpenChange(false);
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('操作失败，请稍后重试');
+        setError('操作失败，请重试');
       }
     } finally {
       setIsLoading(false);
@@ -132,14 +126,14 @@ export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDia
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? '编辑用户' : '新增用户'}</DialogTitle>
-          <DialogDescription>
-            {isEdit ? '修改用户信息，密码留空则不修改' : '创建新的系统用户'}
-          </DialogDescription>
-        </DialogHeader>
-
         <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>{isEdit ? '编辑用户' : '新增用户'}</DialogTitle>
+            <DialogDescription>
+              {isEdit ? '修改用户信息，留空密码则不修改' : '创建新的系统用户'}
+            </DialogDescription>
+          </DialogHeader>
+
           <div className="grid gap-4 py-4">
             {/* 错误提示 */}
             {error && (
@@ -149,101 +143,78 @@ export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDia
             )}
 
             {/* 用户名 */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="username" className="text-right">
-                用户名
-              </Label>
+            <div className="grid gap-2">
+              <Label htmlFor="username">用户名</Label>
               <Input
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="col-span-3"
                 placeholder="请输入用户名"
                 disabled={isEdit || isLoading}
-                autoComplete="off"
               />
             </div>
 
             {/* 密码 */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="password" className="text-right">
-                密码
+            <div className="grid gap-2">
+              <Label htmlFor="password">
+                密码{isEdit && <span className="text-muted-foreground text-xs ml-1">(留空不修改)</span>}
               </Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="col-span-3"
                 placeholder={isEdit ? '留空则不修改密码' : '请输入密码'}
                 disabled={isLoading}
-                autoComplete="new-password"
               />
             </div>
 
             {/* 昵称 */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="nickname" className="text-right">
-                昵称
-              </Label>
+            <div className="grid gap-2">
+              <Label htmlFor="nickname">昵称</Label>
               <Input
                 id="nickname"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
-                className="col-span-3"
                 placeholder="请输入昵称（可选）"
                 disabled={isLoading}
               />
             </div>
 
-            {/* 状态 */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">状态</Label>
-              <div className="col-span-3 flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="status"
-                    checked={status === UserStatus.ENABLED}
-                    onChange={() => setStatus(UserStatus.ENABLED)}
-                    disabled={isLoading}
-                    className="w-4 h-4"
-                  />
-                  <span>启用</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="status"
-                    checked={status === UserStatus.DISABLED}
-                    onChange={() => setStatus(UserStatus.DISABLED)}
-                    disabled={isLoading}
-                    className="w-4 h-4"
-                  />
-                  <span>禁用</span>
-                </label>
-              </div>
+            {/* 管理员 */}
+            <div className="flex items-center justify-between">
+              <Label htmlFor="isAdmin">管理员权限</Label>
+              <Switch
+                id="isAdmin"
+                checked={isAdmin}
+                onCheckedChange={setIsAdmin}
+                disabled={isLoading}
+              />
             </div>
+
+            {/* 状态（仅编辑时显示） */}
+            {isEdit && (
+              <div className="flex items-center justify-between">
+                <Label htmlFor="status">启用状态</Label>
+                <Switch
+                  id="status"
+                  checked={status === UserStatus.ENABLED}
+                  onCheckedChange={(checked) =>
+                    setStatus(checked ? UserStatus.ENABLED : UserStatus.DISABLED)
+                  }
+                  disabled={isLoading}
+                />
+              </div>
+            )}
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isLoading}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               取消
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  保存中...
-                </>
-              ) : (
-                '保存'
-              )}
+              {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {isEdit ? '保存' : '创建'}
             </Button>
           </DialogFooter>
         </form>

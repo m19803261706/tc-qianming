@@ -140,6 +140,46 @@ export async function authDelete<T>(path: string): Promise<ApiResponse<T>> {
 }
 
 /**
+ * 通用请求方法（带认证）
+ * 用于需要自定义请求配置的场景
+ */
+export async function authRequest<T>(
+  path: string,
+  options?: RequestInit
+): Promise<T> {
+  const url = buildUrl(path);
+  const token = getToken();
+  const headers: HeadersInit = {
+    ...(options?.headers as Record<string, string>),
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  // 处理 401 未授权响应
+  if (response.status === 401) {
+    console.warn('[API Client] 收到 401 响应，清除认证状态');
+    removeToken();
+    if (onUnauthorized) {
+      onUnauthorized();
+    }
+    throw new Error('登录已过期，请重新登录');
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+  }
+
+  return response.json();
+}
+
+/**
  * 文件上传（带认证）
  */
 export async function authUpload<T>(
