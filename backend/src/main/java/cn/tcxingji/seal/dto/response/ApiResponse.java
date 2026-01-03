@@ -89,6 +89,16 @@ public class ApiResponse<T> {
     }
 
     /**
+     * 失败响应（默认错误码 400）
+     *
+     * @param message 错误消息
+     * @return ApiResponse
+     */
+    public static <T> ApiResponse<T> error(String message) {
+        return error(400, message);
+    }
+
+    /**
      * 参数错误响应
      *
      * @param message 错误消息
