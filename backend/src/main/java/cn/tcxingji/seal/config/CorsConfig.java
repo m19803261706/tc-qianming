@@ -22,7 +22,7 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // 允许的来源（前端地址）- 支持多个开发端口
+        // 允许的来源（前端地址）- 支持多个开发端口和生产环境
         config.addAllowedOrigin("http://localhost:3000");
         config.addAllowedOrigin("http://localhost:3001");
         config.addAllowedOrigin("http://localhost:3002");
@@ -31,6 +31,10 @@ public class CorsConfig {
         config.addAllowedOrigin("http://127.0.0.1:3001");
         config.addAllowedOrigin("http://127.0.0.1:3002");
         config.addAllowedOrigin("http://127.0.0.1:3003");
+        // 生产环境（华为云服务器）
+        config.addAllowedOrigin("http://60.10.240.4:8100");
+        config.addAllowedOrigin("http://60.10.240.4:3000");
+        config.addAllowedOrigin("http://60.10.240.4:8099");
 
         // 允许的请求头
         config.addAllowedHeader("*");
