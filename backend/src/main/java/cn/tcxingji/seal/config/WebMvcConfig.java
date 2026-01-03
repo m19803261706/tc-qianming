@@ -1,8 +1,10 @@
 package cn.tcxingji.seal.config;
 
+import cn.tcxingji.seal.interceptor.AuthInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -23,6 +25,26 @@ import java.nio.file.Paths;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final FileUploadConfig fileUploadConfig;
+    private final AuthInterceptor authInterceptor;
+
+    /**
+     * 配置认证拦截器
+     * <p>
+     * 拦截所有 /api/** 请求，排除不需要认证的接口
+     * </p>
+     */
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(authInterceptor)
+                // 拦截所有 API 请求
+                .addPathPatterns("/api/**")
+                // 排除不需要认证的接口
+                .excludePathPatterns(
+                        "/api/auth/login",           // 登录接口
+                        "/api/contracts/*/preview/**" // 合同预览接口（公开访问）
+                );
+        log.info("认证拦截器已配置: 拦截 /api/** 排除 /api/auth/login, /api/contracts/*/preview/**");
+    }
 
     /**
      * 配置静态资源映射
