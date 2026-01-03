@@ -1,7 +1,10 @@
 package cn.tcxingji.seal.service;
 
+import cn.tcxingji.seal.dto.user.UserCreateRequest;
+import cn.tcxingji.seal.dto.user.UserUpdateRequest;
 import cn.tcxingji.seal.entity.SysUser;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -44,4 +47,36 @@ public interface SysUserService {
      * @return true-存在，false-不存在
      */
     boolean existsByUsername(String username);
+
+    /**
+     * 获取所有用户列表
+     *
+     * @return 用户列表
+     */
+    List<SysUser> findAll();
+
+    /**
+     * 创建用户
+     *
+     * @param request 创建用户请求
+     * @return 创建的用户
+     */
+    SysUser create(UserCreateRequest request);
+
+    /**
+     * 更新用户
+     *
+     * @param id      用户ID
+     * @param request 更新用户请求
+     * @return 更新后的用户
+     */
+    SysUser update(Long id, UserUpdateRequest request);
+
+    /**
+     * 删除用户
+     *
+     * @param id 用户ID
+     * @throws IllegalStateException 如果尝试删除管理员账号
+     */
+    void delete(Long id);
 }
