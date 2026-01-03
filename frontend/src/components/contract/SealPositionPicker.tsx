@@ -14,10 +14,6 @@ export interface StampItem {
   id: number;
   name: string;
   imageUrl: string;
-  /** 图片实际宽度（像素），用于保持宽高比 */
-  imageWidth?: number;
-  /** 图片实际高度（像素），用于保持宽高比 */
-  imageHeight?: number;
 }
 
 /**
@@ -33,15 +29,12 @@ export function sealToStampItem(seal: Seal): StampItem {
 
 /**
  * 将签名转换为通用图章接口
- * 包含图片实际尺寸用于保持宽高比和精确坐标计算
  */
 export function signatureToStampItem(signature: Signature): StampItem {
   return {
     id: signature.id,
     name: signature.signatureName,
     imageUrl: signature.signatureImageUrl || getFullFileUrl(signature.signatureImage),
-    imageWidth: signature.imageWidth,
-    imageHeight: signature.imageHeight,
   };
 }
 
@@ -88,6 +81,8 @@ interface SealPositionPickerProps {
   maxSealSize?: number;
   /** 当前缩放比例（用于坐标转换，CSS transform scale 会影响坐标计算） */
   scale?: number;
+  /** 容器尺寸变化回调（用于报告实际渲染尺寸，解决布局限制导致的尺寸不匹配问题） */
+  onContainerSizeChange?: (width: number, height: number) => void;
 }
 
 /**
@@ -112,6 +107,7 @@ export default function SealPositionPicker({
   minSealSize = 30,
   maxSealSize = 200,
   scale = 1, // CSS transform scale 会影响 getBoundingClientRect 返回的坐标
+  onContainerSizeChange,
 }: SealPositionPickerProps) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -124,6 +120,17 @@ export default function SealPositionPicker({
 
   // 用于防止拖拽/缩放结束后立即触发 click 添加新印章
   const justFinishedActionRef = useRef(false);
+
+  // 报告容器实际尺寸（解决布局限制导致的尺寸不匹配问题）
+  useEffect(() => {
+    if (containerRef.current && onContainerSizeChange) {
+      const rect = containerRef.current.getBoundingClientRect();
+      // 报告容器实际渲染尺寸（除以 scale 得到 CSS 尺寸）
+      const actualWidth = rect.width / scale;
+      const actualHeight = rect.height / scale;
+      onContainerSizeChange(actualWidth, actualHeight);
+    }
+  }, [scale, onContainerSizeChange, pageWidth, pageHeight]);
 
   // 过滤当前页的印章
   const currentPagePlacements = placements.filter(p => p.pageNumber === pageNumber);
@@ -139,33 +146,29 @@ export default function SealPositionPicker({
       return;
     }
 
-    // 计算实际放置尺寸（根据图片宽高比）
-    let placementWidth = defaultSealSize;
-    let placementHeight = defaultSealSize;
-
-    // 如果有图片实际尺寸，保持宽高比
-    if (selectedSeal.imageWidth && selectedSeal.imageHeight) {
-      const aspectRatio = selectedSeal.imageWidth / selectedSeal.imageHeight;
-      if (aspectRatio > 1) {
-        // 宽图：以高度为基准
-        placementHeight = defaultSealSize;
-        placementWidth = defaultSealSize * aspectRatio;
-      } else {
-        // 高图或正方形：以宽度为基准
-        placementWidth = defaultSealSize;
-        placementHeight = defaultSealSize / aspectRatio;
-      }
-    }
-
     // 注意：当使用 CSS transform: scale() 时，getBoundingClientRect() 返回的是视觉尺寸（已缩放）
     // 但鼠标坐标是视觉坐标，需要除以 scale 转换为内部坐标
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / scale - placementWidth / 2;
-    const y = (e.clientY - rect.top) / scale - placementHeight / 2;
 
-    // 边界检查
-    const boundedX = Math.max(0, Math.min(x, pageWidth - placementWidth));
-    const boundedY = Math.max(0, Math.min(y, pageHeight - placementHeight));
+    // 容器的实际 CSS 尺寸（用于边界检查）
+    const containerWidth = rect.width / scale;
+    const containerHeight = rect.height / scale;
+
+    // 调试信息
+    console.log('=== 点击放置印章调试信息 ===');
+    console.log('鼠标位置:', { clientX: e.clientX, clientY: e.clientY });
+    console.log('容器rect:', { left: rect.left, top: rect.top, width: rect.width, height: rect.height });
+    console.log('容器实际尺寸:', { containerWidth, containerHeight });
+    console.log('scale:', scale);
+
+    const x = (e.clientX - rect.left) / scale - defaultSealSize / 2;
+    const y = (e.clientY - rect.top) / scale - defaultSealSize / 2;
+
+    console.log('计算的坐标:', { x, y });
+
+    // 边界检查（使用容器实际尺寸，而不是传入的 pageWidth/pageHeight）
+    const boundedX = Math.max(0, Math.min(x, containerWidth - defaultSealSize));
+    const boundedY = Math.max(0, Math.min(y, containerHeight - defaultSealSize));
 
     const placement: SealPlacement = {
       id: generateId(),
@@ -173,8 +176,8 @@ export default function SealPositionPicker({
       pageNumber,
       x: boundedX,
       y: boundedY,
-      width: placementWidth,
-      height: placementHeight,
+      width: defaultSealSize,
+      height: defaultSealSize,
     };
 
     onAddPlacement(placement);
@@ -202,15 +205,19 @@ export default function SealPositionPicker({
     const placement = placements.find(p => p.id === draggingId);
     if (!placement) return;
 
+    // 容器的实际 CSS 尺寸
+    const containerWidth = rect.width / scale;
+    const containerHeight = rect.height / scale;
+
     let x = (e.clientX - rect.left) / scale - dragOffset.x;
     let y = (e.clientY - rect.top) / scale - dragOffset.y;
 
-    // 边界检查
-    x = Math.max(0, Math.min(x, pageWidth - placement.width));
-    y = Math.max(0, Math.min(y, pageHeight - placement.height));
+    // 边界检查（使用容器实际尺寸）
+    x = Math.max(0, Math.min(x, containerWidth - placement.width));
+    y = Math.max(0, Math.min(y, containerHeight - placement.height));
 
     onUpdatePlacement(draggingId, { x, y });
-  }, [draggingId, dragOffset, pageWidth, pageHeight, placements, onUpdatePlacement, scale]);
+  }, [draggingId, dragOffset, placements, onUpdatePlacement, scale]);
 
   // 结束拖拽
   const handleDragEnd = useCallback(() => {
@@ -241,23 +248,24 @@ export default function SealPositionPicker({
     });
   }, []);
 
-  // 缩放移动（保持原始宽高比）
+  // 缩放移动
   const handleResizeMove = useCallback((e: React.MouseEvent) => {
-    if (!resizingId || !resizeHandle) return;
+    if (!resizingId || !resizeHandle || !containerRef.current) return;
 
     const placement = placements.find(p => p.id === resizingId);
     if (!placement) return;
+
+    // 获取容器实际尺寸
+    const rect = containerRef.current.getBoundingClientRect();
+    const containerWidth = rect.width / scale;
+    const containerHeight = rect.height / scale;
 
     // 计算鼠标移动距离（CSS transform: scale() 影响坐标，需要除以 scale）
     const deltaX = (e.clientX - resizeStart.x) / scale;
     const deltaY = (e.clientY - resizeStart.y) / scale;
 
-    // 计算原始宽高比
-    const aspectRatio = resizeStart.width / resizeStart.height;
-
-    // 根据手柄位置计算新尺寸（保持原始宽高比）
-    let newWidth = resizeStart.width;
-    let newHeight = resizeStart.height;
+    // 根据手柄位置计算新尺寸（保持 1:1 比例）
+    let newSize = resizeStart.width;
     let newX = resizeStart.originX;
     let newY = resizeStart.originY;
 
@@ -267,53 +275,48 @@ export default function SealPositionPicker({
     switch (resizeHandle) {
       case 'bottom-right':
         // 右下角：增大delta = 放大
-        newWidth = resizeStart.width + delta;
-        newHeight = newWidth / aspectRatio;
+        newSize = resizeStart.width + delta;
         break;
       case 'top-left':
         // 左上角：减小delta = 放大
-        newWidth = resizeStart.width - delta;
-        newHeight = newWidth / aspectRatio;
-        newX = resizeStart.originX + (resizeStart.width - newWidth);
-        newY = resizeStart.originY + (resizeStart.height - newHeight);
+        newSize = resizeStart.width - delta;
+        newX = resizeStart.originX + (resizeStart.width - newSize);
+        newY = resizeStart.originY + (resizeStart.height - newSize);
         break;
       case 'top-right':
         // 右上角：X增大=放大, Y减小=放大
-        newWidth = resizeStart.width + deltaX;
-        newHeight = newWidth / aspectRatio;
-        newY = resizeStart.originY + (resizeStart.height - newHeight);
+        newSize = resizeStart.width + deltaX;
+        newY = resizeStart.originY + (resizeStart.height - newSize);
         break;
       case 'bottom-left':
         // 左下角：X减小=放大, Y增大=放大
-        newWidth = resizeStart.width - deltaX;
-        newHeight = newWidth / aspectRatio;
-        newX = resizeStart.originX + (resizeStart.width - newWidth);
+        newSize = resizeStart.width - deltaX;
+        newX = resizeStart.originX + (resizeStart.width - newSize);
         break;
     }
 
-    // 限制尺寸范围（以宽度为基准）
-    newWidth = Math.max(minSealSize, Math.min(maxSealSize, newWidth));
-    newHeight = newWidth / aspectRatio;
+    // 限制尺寸范围
+    newSize = Math.max(minSealSize, Math.min(maxSealSize, newSize));
 
     // 重新计算位置以适应尺寸限制
     if (resizeHandle === 'top-left' || resizeHandle === 'bottom-left') {
-      newX = resizeStart.originX + (resizeStart.width - newWidth);
+      newX = resizeStart.originX + (resizeStart.width - newSize);
     }
     if (resizeHandle === 'top-left' || resizeHandle === 'top-right') {
-      newY = resizeStart.originY + (resizeStart.height - newHeight);
+      newY = resizeStart.originY + (resizeStart.height - newSize);
     }
 
-    // 边界检查
-    newX = Math.max(0, Math.min(newX, pageWidth - newWidth));
-    newY = Math.max(0, Math.min(newY, pageHeight - newHeight));
+    // 边界检查（使用容器实际尺寸）
+    newX = Math.max(0, Math.min(newX, containerWidth - newSize));
+    newY = Math.max(0, Math.min(newY, containerHeight - newSize));
 
     onUpdatePlacement(resizingId, {
       x: newX,
       y: newY,
-      width: newWidth,
-      height: newHeight,
+      width: newSize,
+      height: newSize,
     });
-  }, [resizingId, resizeHandle, resizeStart, placements, minSealSize, maxSealSize, pageWidth, pageHeight, onUpdatePlacement, scale]);
+  }, [resizingId, resizeHandle, resizeStart, placements, minSealSize, maxSealSize, onUpdatePlacement, scale]);
 
   // 结束缩放
   const handleResizeEnd = useCallback(() => {

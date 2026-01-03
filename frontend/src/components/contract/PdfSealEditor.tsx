@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import PdfViewer from './PdfViewer';
 import SealPicker from './SealPicker';
 import SignaturePicker from './SignaturePicker';
@@ -59,10 +59,10 @@ export default function PdfSealEditor({
   const [placements, setPlacements] = useState<SealPlacement[]>([]);
   // 当前页码
   const [currentPage, setCurrentPage] = useState(1);
-  // 页面尺寸（预览图像素尺寸）
-  const [pageSize, setPageSize] = useState({ width: 600, height: 800 });
-  // PDF 实际尺寸（pt），用于精确坐标转换
-  const [pdfSize, setPdfSize] = useState({ width: 595, height: 842 });
+  // 页面尺寸（预览图像素尺寸）- 使用 ref 避免在 render 中 setState
+  const pageSizeRef = useRef({ width: 600, height: 800 });
+  // PDF 实际尺寸（pt），用于精确坐标转换 - 使用 ref 避免在 render 中 setState
+  const pdfSizeRef = useRef({ width: 595, height: 842 });
   // 提交状态
   const [submitting, setSubmitting] = useState(false);
 
@@ -112,14 +112,12 @@ export default function PdfSealEditor({
     pdfHeight: number,
     scale: number // CSS transform scale 会影响坐标计算
   ) => {
-    // 保存预览图像素尺寸
-    if (pageWidth !== pageSize.width || pageHeight !== pageSize.height) {
-      setPageSize({ width: pageWidth, height: pageHeight });
-    }
+    // 注意：pageWidth/pageHeight 是后端返回的预览图原始尺寸
+    // 但实际渲染的容器尺寸可能因布局限制而不同
+    // 我们需要让 SealPositionPicker 通过回调报告实际的容器尺寸
+
     // 保存 PDF 实际尺寸（pt）
-    if (pdfWidth !== pdfSize.width || pdfHeight !== pdfSize.height) {
-      setPdfSize({ width: pdfWidth, height: pdfHeight });
-    }
+    pdfSizeRef.current = { width: pdfWidth, height: pdfHeight };
 
     return (
       <SealPositionPicker
@@ -132,10 +130,14 @@ export default function PdfSealEditor({
         onUpdatePlacement={handleUpdatePlacement}
         onRemovePlacement={handleRemovePlacement}
         defaultSealSize={stampSize}
-        scale={scale} // 传递缩放比例用于正确的坐标计算
+        scale={scale}
+        onContainerSizeChange={(width, height) => {
+          // 保存容器实际渲染尺寸（用于坐标转换）
+          pageSizeRef.current = { width, height };
+        }}
       />
     );
-  }, [currentSelected, placements, stampSize, pageSize, pdfSize, handleAddPlacement, handleUpdatePlacement, handleRemovePlacement]);
+  }, [currentSelected, placements, stampSize, handleAddPlacement, handleUpdatePlacement, handleRemovePlacement]);
 
   // 提交盖章
   const handleSubmit = async () => {
@@ -159,7 +161,7 @@ export default function PdfSealEditor({
         const requests: ContractSealRequest[] = [];
         sealGroups.forEach((placementList, sealId) => {
           const positions: SealPosition[] = placementList.map(p =>
-            placementToSealPosition(p, pageSize.width, pageSize.height, pdfSize.width, pdfSize.height)
+            placementToSealPosition(p, pageSizeRef.current.width, pageSizeRef.current.height, pdfSizeRef.current.width, pdfSizeRef.current.height)
           );
 
           requests.push({
@@ -191,7 +193,7 @@ export default function PdfSealEditor({
         const requests: ContractSealRequest[] = [];
         signatureGroups.forEach((placementList, signatureId) => {
           const positions: SealPosition[] = placementList.map(p =>
-            placementToSealPosition(p, pageSize.width, pageSize.height, pdfSize.width, pdfSize.height)
+            placementToSealPosition(p, pageSizeRef.current.width, pageSizeRef.current.height, pdfSizeRef.current.width, pdfSizeRef.current.height)
           );
 
           requests.push({
