@@ -27,6 +27,10 @@ export interface Signature {
   fontColor?: string;
   /** 签名文本内容 */
   textContent?: string;
+  /** 签名图片宽度（像素），用于精确显示和坐标计算 */
+  imageWidth?: number;
+  /** 签名图片高度（像素），用于精确显示和坐标计算 */
+  imageHeight?: number;
   /** 是否默认签名（0-否 1-是） */
   isDefault: number;
   /** 状态（0-禁用 1-启用） */

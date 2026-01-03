@@ -62,6 +62,18 @@ public class SignatureCreateRequest {
     private String textContent;
 
     /**
+     * 签名图片宽度（像素）
+     * 用于前端精确显示和坐标计算
+     */
+    private Integer imageWidth;
+
+    /**
+     * 签名图片高度（像素）
+     * 用于前端精确显示和坐标计算
+     */
+    private Integer imageHeight;
+
+    /**
      * 是否设为默认签名
      * 0-否 1-是
      */

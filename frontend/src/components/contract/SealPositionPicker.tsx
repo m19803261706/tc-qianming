@@ -14,6 +14,10 @@ export interface StampItem {
   id: number;
   name: string;
   imageUrl: string;
+  /** 图片实际宽度（像素），用于保持宽高比 */
+  imageWidth?: number;
+  /** 图片实际高度（像素），用于保持宽高比 */
+  imageHeight?: number;
 }
 
 /**
@@ -29,12 +33,15 @@ export function sealToStampItem(seal: Seal): StampItem {
 
 /**
  * 将签名转换为通用图章接口
+ * 包含图片实际尺寸用于保持宽高比和精确坐标计算
  */
 export function signatureToStampItem(signature: Signature): StampItem {
   return {
     id: signature.id,
     name: signature.signatureName,
     imageUrl: signature.signatureImageUrl || getFullFileUrl(signature.signatureImage),
+    imageWidth: signature.imageWidth,
+    imageHeight: signature.imageHeight,
   };
 }
 
@@ -129,13 +136,31 @@ export default function SealPositionPicker({
       return;
     }
 
+    // 计算实际放置尺寸（根据图片宽高比）
+    let placementWidth = defaultSealSize;
+    let placementHeight = defaultSealSize;
+
+    // 如果有图片实际尺寸，保持宽高比
+    if (selectedSeal.imageWidth && selectedSeal.imageHeight) {
+      const aspectRatio = selectedSeal.imageWidth / selectedSeal.imageHeight;
+      if (aspectRatio > 1) {
+        // 宽图：以高度为基准
+        placementHeight = defaultSealSize;
+        placementWidth = defaultSealSize * aspectRatio;
+      } else {
+        // 高图或正方形：以宽度为基准
+        placementWidth = defaultSealSize;
+        placementHeight = defaultSealSize / aspectRatio;
+      }
+    }
+
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left - defaultSealSize / 2;
-    const y = e.clientY - rect.top - defaultSealSize / 2;
+    const x = e.clientX - rect.left - placementWidth / 2;
+    const y = e.clientY - rect.top - placementHeight / 2;
 
     // 边界检查
-    const boundedX = Math.max(0, Math.min(x, pageWidth - defaultSealSize));
-    const boundedY = Math.max(0, Math.min(y, pageHeight - defaultSealSize));
+    const boundedX = Math.max(0, Math.min(x, pageWidth - placementWidth));
+    const boundedY = Math.max(0, Math.min(y, pageHeight - placementHeight));
 
     const placement: SealPlacement = {
       id: generateId(),
@@ -143,8 +168,8 @@ export default function SealPositionPicker({
       pageNumber,
       x: boundedX,
       y: boundedY,
-      width: defaultSealSize,
-      height: defaultSealSize,
+      width: placementWidth,
+      height: placementHeight,
     };
 
     onAddPlacement(placement);

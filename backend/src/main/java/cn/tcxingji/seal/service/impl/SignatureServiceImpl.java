@@ -1,5 +1,6 @@
 package cn.tcxingji.seal.service.impl;
 
+import cn.tcxingji.seal.config.FileUploadConfig;
 import cn.tcxingji.seal.dto.request.SignatureCreateRequest;
 import cn.tcxingji.seal.dto.request.SignatureQueryRequest;
 import cn.tcxingji.seal.dto.response.PageResponse;
@@ -17,6 +18,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.List;
 
 /**
@@ -34,6 +38,7 @@ import java.util.List;
 public class SignatureServiceImpl implements SignatureService {
 
     private final PersonalSignatureRepository signatureRepository;
+    private final FileUploadConfig fileUploadConfig;
 
     /**
      * 文件访问基础URL
@@ -46,7 +51,7 @@ public class SignatureServiceImpl implements SignatureService {
     public SignatureResponse create(SignatureCreateRequest request) {
         log.info("创建签名: userId={}, signatureType={}", request.getUserId(), request.getSignatureType());
 
-        // 构建实体
+        // 构建实体（包含图片尺寸用于精确显示和坐标计算）
         PersonalSignature signature = PersonalSignature.builder()
                 .userId(request.getUserId())
                 .signatureName(request.getSignatureName())
@@ -55,6 +60,8 @@ public class SignatureServiceImpl implements SignatureService {
                 .fontName(request.getFontName())
                 .fontColor(request.getFontColor())
                 .textContent(request.getTextContent())
+                .imageWidth(request.getImageWidth())
+                .imageHeight(request.getImageHeight())
                 .isDefault(request.getIsDefault())
                 .status(PersonalSignature.Status.ENABLED)
                 .createBy(request.getCreateBy())
@@ -224,11 +231,39 @@ public class SignatureServiceImpl implements SignatureService {
 
     /**
      * 转换为响应 DTO
+     * 如果数据库中没有图片尺寸，则动态读取图片文件获取
      *
      * @param entity 实体
      * @return 响应 DTO
      */
     private SignatureResponse toResponse(PersonalSignature entity) {
-        return SignatureResponse.fromEntity(entity, baseUrl);
+        SignatureResponse response = SignatureResponse.fromEntity(entity, baseUrl);
+
+        // 如果数据库中没有图片尺寸，动态读取图片文件获取
+        if (response != null && (response.getImageWidth() == null || response.getImageHeight() == null)) {
+            try {
+                // 从相对路径获取实际文件路径
+                String relativePath = entity.getSignatureImage();
+                if (relativePath != null && relativePath.startsWith("/uploads/signatures/")) {
+                    // 移除 /uploads/signatures/ 前缀
+                    String subPath = relativePath.substring("/uploads/signatures/".length());
+                    File imageFile = new File(fileUploadConfig.getSignaturePath(), subPath);
+
+                    if (imageFile.exists()) {
+                        BufferedImage image = ImageIO.read(imageFile);
+                        if (image != null) {
+                            response.setImageWidth(image.getWidth());
+                            response.setImageHeight(image.getHeight());
+                            log.debug("动态读取签名图片尺寸: id={}, width={}, height={}",
+                                    entity.getId(), image.getWidth(), image.getHeight());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("读取签名图片尺寸失败: id={}, error={}", entity.getId(), e.getMessage());
+            }
+        }
+
+        return response;
     }
 }

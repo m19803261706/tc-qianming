@@ -75,6 +75,18 @@ public class SignatureResponse {
     private String textContent;
 
     /**
+     * 签名图片宽度（像素）
+     * 用于前端精确显示和坐标计算
+     */
+    private Integer imageWidth;
+
+    /**
+     * 签名图片高度（像素）
+     * 用于前端精确显示和坐标计算
+     */
+    private Integer imageHeight;
+
+    /**
      * 是否默认签名
      * 0-否 1-是
      */
@@ -116,6 +128,8 @@ public class SignatureResponse {
                 .fontName(entity.getFontName())
                 .fontColor(entity.getFontColor())
                 .textContent(entity.getTextContent())
+                .imageWidth(entity.getImageWidth())
+                .imageHeight(entity.getImageHeight())
                 .isDefault(entity.getIsDefault())
                 .status(entity.getStatus())
                 .createTime(entity.getCreateTime())

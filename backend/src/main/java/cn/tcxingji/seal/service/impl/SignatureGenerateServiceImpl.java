@@ -151,12 +151,14 @@ public class SignatureGenerateServiceImpl implements SignatureGenerateService {
             // 4. 保存图片文件
             String relativePath = saveSignatureImage(processedImage, "handwrite");
 
-            // 5. 创建签名记录
+            // 5. 创建签名记录（保存图片尺寸用于精确显示和坐标计算）
             SignatureCreateRequest createRequest = SignatureCreateRequest.builder()
                     .userId(request.getUserId())
                     .signatureName(request.getName() != null ? request.getName() : "手写签名")
                     .signatureImage(relativePath)
                     .signatureType(PersonalSignature.SignatureType.HANDWRITING)
+                    .imageWidth(processedImage.getWidth())
+                    .imageHeight(processedImage.getHeight())
                     .isDefault(Boolean.TRUE.equals(request.getSetDefault()) ? 1 : 0)
                     .createBy(request.getCreateBy())
                     .build();
@@ -190,7 +192,7 @@ public class SignatureGenerateServiceImpl implements SignatureGenerateService {
             // 4. 保存图片文件
             String relativePath = saveSignatureImage(signatureImage, "font");
 
-            // 5. 创建签名记录
+            // 5. 创建签名记录（保存图片尺寸用于精确显示和坐标计算）
             String signatureName = request.getSignatureName();
             if (signatureName == null || signatureName.isEmpty()) {
                 signatureName = request.getText() + " - " + request.getFontName();
@@ -204,6 +206,8 @@ public class SignatureGenerateServiceImpl implements SignatureGenerateService {
                     .fontName(request.getFontName())
                     .fontColor(request.getFontColor())
                     .textContent(request.getText())
+                    .imageWidth(signatureImage.getWidth())
+                    .imageHeight(signatureImage.getHeight())
                     .isDefault(Boolean.TRUE.equals(request.getSetDefault()) ? 1 : 0)
                     .createBy(request.getCreateBy())
                     .build();
