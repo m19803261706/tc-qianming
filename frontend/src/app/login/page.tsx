@@ -12,11 +12,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { login } from '@/lib/auth-api';
 import { Loader2, Lock, User, FileSignature } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
 
   // 表单状态
   const [username, setUsername] = useState('');
