@@ -1,0 +1,78 @@
+# 太初星集电子签章系统 - 生产环境配置
+
+server:
+  port: 8099
+
+spring:
+  application:
+    name: tc-seal
+
+  # 数据源配置（通过环境变量覆盖）
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://60.10.230.150:3306/dianziqian?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:asd123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+
+  # JPA 配置
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  # Flyway 数据库迁移配置
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: true
+    out-of-order: false
+    table: flyway_schema_history
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+# 文件存储配置（生产环境）
+file:
+  upload:
+    base-url: ${FILE_UPLOAD_BASE_URL:http://60.10.240.4:8099}
+    seal-path: /app/uploads/seals
+    contract-path: /app/uploads/contracts
+    signature-path: /app/uploads/signatures
+
+# JWT 认证配置
+jwt:
+  secret: ${JWT_SECRET:TaiChuXingJi2026SecretKeyForJwtTokenGeneration}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+# 日志配置（生产环境减少日志输出）
+logging:
+  level:
+    root: INFO
+    cn.tcxingji.seal: INFO
+    org.hibernate.SQL: WARN
+    org.springframework: WARN
+
+# Actuator 健康检查端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized

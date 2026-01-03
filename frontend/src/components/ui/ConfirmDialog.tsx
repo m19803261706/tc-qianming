@@ -3,6 +3,10 @@
  *
  * 基于 AlertDialog 封装的通用确认弹窗
  * 支持危险操作样式和加载状态
+ *
+ * 兼容两种属性命名风格：
+ * - isOpen/onClose/message/danger（印章/合同页面使用）
+ * - open/onOpenChange/description/destructive（账号管理页面使用）
  */
 
 import {
@@ -17,22 +21,26 @@ import {
 } from '@/components/ui/alert-dialog';
 
 interface ConfirmDialogProps {
-  /** 是否打开弹窗 */
-  isOpen: boolean;
-  /** 关闭弹窗回调 */
-  onClose: () => void;
+  /** 是否打开弹窗（兼容 isOpen 和 open 两种命名） */
+  isOpen?: boolean;
+  open?: boolean;
+  /** 关闭弹窗回调（兼容 onClose 和 onOpenChange 两种命名） */
+  onClose?: () => void;
+  onOpenChange?: (open: boolean) => void;
   /** 确认按钮回调 */
   onConfirm: () => void;
   /** 弹窗标题 */
   title: string;
-  /** 弹窗消息内容 */
-  message: string;
+  /** 弹窗消息内容（兼容 message 和 description 两种命名） */
+  message?: string;
+  description?: string;
   /** 确认按钮文字 */
   confirmText?: string;
   /** 取消按钮文字 */
   cancelText?: string;
-  /** 是否为危险操作（红色按钮） */
+  /** 是否为危险操作（红色按钮）（兼容 danger 和 destructive 两种命名） */
   danger?: boolean;
+  destructive?: boolean;
   /** 是否正在加载 */
   loading?: boolean;
 }
@@ -41,6 +49,7 @@ interface ConfirmDialogProps {
  * 确认对话框组件
  *
  * @example
+ * // 用法一（印章/合同页面风格）
  * <ConfirmDialog
  *   isOpen={deleteDialogOpen}
  *   onClose={() => setDeleteDialogOpen(false)}
@@ -51,31 +60,63 @@ interface ConfirmDialogProps {
  *   danger
  *   loading={deleteLoading}
  * />
+ *
+ * @example
+ * // 用法二（账号管理页面风格）
+ * <ConfirmDialog
+ *   open={deleteConfirmOpen}
+ *   onOpenChange={setDeleteConfirmOpen}
+ *   title="确认删除"
+ *   description="确定要删除吗？此操作不可恢复。"
+ *   onConfirm={handleDelete}
+ *   confirmText="删除"
+ *   destructive
+ * />
  */
 export function ConfirmDialog({
   isOpen,
+  open,
   onClose,
+  onOpenChange,
   onConfirm,
   title,
   message,
+  description,
   confirmText = '确认',
   cancelText = '取消',
   danger = false,
+  destructive = false,
   loading = false,
 }: ConfirmDialogProps) {
+  // 兼容两种属性命名
+  const isDialogOpen = isOpen ?? open ?? false;
+  const dialogMessage = message ?? description ?? '';
+  const isDanger = danger || destructive;
+
+  // 处理关闭事件
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      if (onClose) {
+        onClose();
+      } else if (onOpenChange) {
+        onOpenChange(false);
+      }
+    }
+  };
+
   return (
-    <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <AlertDialog open={isDialogOpen} onOpenChange={handleOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{message}</AlertDialogDescription>
+          <AlertDialogDescription>{dialogMessage}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>{cancelText}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             disabled={loading}
-            className={danger ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
+            className={isDanger ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
           >
             {loading ? (
               <span className="flex items-center gap-2">

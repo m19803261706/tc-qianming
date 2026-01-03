@@ -1,0 +1,72 @@
+# 太初星集电子签章系统 - Docker Compose 配置
+# 用于生产环境部署
+
+version: '3.8'
+
+services:
+  # ==================== 后端服务 ====================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tc-seal-backend
+    restart: unless-stopped
+    ports:
+      - "8099:8099"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - TZ=Asia/Shanghai
+      # 数据库配置（使用外部 MySQL）
+      - SPRING_DATASOURCE_URL=jdbc:mysql://60.10.230.150:3306/dianziqian?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=asd123
+      # 文件上传配置
+      - FILE_UPLOAD_BASE_URL=http://60.10.240.4:8099
+    volumes:
+      # 持久化上传文件
+      - tc-seal-uploads:/app/uploads
+    networks:
+      - tc-seal-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8099/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ==================== 前端服务 ====================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://60.10.240.4:8099
+    container_name: tc-seal-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - TZ=Asia/Shanghai
+      - NEXT_PUBLIC_API_URL=http://60.10.240.4:8099
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - tc-seal-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# ==================== 网络配置 ====================
+networks:
+  tc-seal-network:
+    driver: bridge
+
+# ==================== 数据卷配置 ====================
+volumes:
+  tc-seal-uploads:
+    driver: local
